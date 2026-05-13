@@ -533,3 +533,26 @@ textarea { resize: vertical; line-height: 1.65; }
   color: var(--text-muted);
   padding-top: 16px;
 }
+
+/* ── 매뉴얼 버튼 (헤더) ─────────────────────────── */
+.btn-manual {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,.12);
+  border: 1.5px solid rgba(255,255,255,.35);
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255,255,255,.95);
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background .18s ease, border-color .18s ease;
+  font-family: var(--font);
+}
+.btn-manual:hover {
+  background: rgba(255,255,255,.22);
+  border-color: rgba(255,255,255,.6);
+}
