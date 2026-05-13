@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>세특 프롬프트 생성기</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════
+     헤더
+══════════════════════════════════════════════ -->
+<header class="site-header">
+  <div class="header-inner">
+    <div>
+      <div class="header-title">📋 세특 프롬프트 생성기</div>
+      <div class="header-sub">수행평가 원문 → AI 세특 작성 프롬프트 자동 생성</div>
+    </div>
+    <div class="privacy-badge">입력 내용은 서버로 전송되지 않습니다</div>
+  </div>
+</header>
+
+<div class="page-wrap">
+
+  <!-- ══════════════════════════════════════════
+       1구역 — 기본 정보 입력
+  ══════════════════════════════════════════ -->
+  <section class="section-card" id="sec-basic">
+    <div class="section-label">1구역 — 기본 정보</div>
+
+    <div class="form-grid">
+
+      <!-- 학년도 -->
+      <div class="field">
+        <label class="field-label" for="school-year">학년도 <span class="req">*</span></label>
+        <select id="school-year">
+          <option value="">선택</option>
+          <option value="2024">2024학년도</option>
+          <option value="2025">2025학년도</option>
+          <option value="2026">2026학년도</option>
+          <option value="2027">2027학년도</option>
+        </select>
+      </div>
+
+      <!-- 학년 -->
+      <div class="field">
+        <label class="field-label" for="grade">학년 <span class="req">*</span></label>
+        <select id="grade">
+          <option value="">선택</option>
+          <option value="1">고1</option>
+          <option value="2">고2</option>
+          <option value="3">고3</option>
+        </select>
+      </div>
+
+      <!-- 교육과정 판단 결과 (전체 너비) -->
+      <div class="full">
+        <div id="curriculum-result"></div>
+      </div>
+
+      <!-- 교과명 -->
+      <div class="field">
+        <label class="field-label" for="subject-name">교과명 <span class="req">*</span></label>
+        <input type="text" id="subject-name" placeholder="예) 심화국어, 미적분, 물리학Ⅱ">
+        <div id="group-hint" class="field-hint"></div>
+        <div class="field-error" id="err-subject-name"></div>
+      </div>
+
+      <!-- 교과군 -->
+      <div class="field">
+        <label class="field-label" for="subject-group">교과군 <span class="req">*</span></label>
+        <select id="subject-group">
+          <option value="">선택</option>
+          <option value="국어">국어</option>
+          <option value="수학">수학</option>
+          <option value="과학">과학</option>
+          <option value="사회">사회</option>
+          <option value="영어">영어</option>
+          <option value="진로·기타">진로·기타</option>
+        </select>
+      </div>
+
+      <!-- 학생명 -->
+      <div class="field">
+        <label class="field-label" for="student-name">학생명 <span class="req">*</span></label>
+        <input type="text" id="student-name" placeholder="예) 정재민">
+        <div class="extract-suggest" id="name-suggest"></div>
+        <div class="field-error" id="err-student-name"></div>
+      </div>
+
+      <!-- 학번 -->
+      <div class="field">
+        <label class="field-label" for="student-id">학번 <span style="font-weight:400;color:var(--text-muted)">(선택)</span></label>
+        <input type="text" id="student-id" placeholder="예) 30419">
+        <div class="extract-suggest" id="id-suggest"></div>
+      </div>
+
+      <!-- 프롬프트 강도 (전체 너비) -->
+      <div class="field full">
+        <label class="field-label">프롬프트 강도 <span class="req">*</span></label>
+        <div class="radio-group">
+          <div class="radio-option">
+            <input type="radio" name="prompt-mode" id="mode-normal" value="일반">
+            <label for="mode-normal">
+              <span class="radio-emoji">📝</span>
+              일반형
+            </label>
+          </div>
+          <div class="radio-option">
+            <input type="radio" name="prompt-mode" id="mode-hakjong" value="학종강화">
+            <label for="mode-hakjong">
+              <span class="radio-emoji">🎯</span>
+              학종강화형
+            </label>
+          </div>
+          <div class="radio-option">
+            <input type="radio" name="prompt-mode" id="mode-top" value="최상위권" checked>
+            <label for="mode-top">
+              <span class="radio-emoji">⭐</span>
+              최상위권형
+            </label>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /form-grid -->
+  </section>
+
+
+  <!-- ══════════════════════════════════════════
+       2구역 — 원문 입력
+  ══════════════════════════════════════════ -->
+  <section class="section-card" id="sec-raw">
+    <div class="section-label">2구역 — 수행평가 원문 입력</div>
+
+    <!-- 텍스트 붙여넣기 -->
+    <div class="field">
+      <label class="field-label" for="raw-text">원문 붙여넣기 <span class="req">*</span></label>
+      <textarea id="raw-text" rows="12"
+        placeholder="수행평가지에서 학생 답변 부분을 복사해 붙여넣으세요."></textarea>
+      <div class="text-counter">
+        <span id="char-count">0자</span>
+        <span id="byte-count">약 0바이트</span>
+        <span id="mode-display" class="mode-label"></span>
+      </div>
+      <div class="field-error" id="err-raw-text"></div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- docx 드래그앤드롭 -->
+    <div class="field">
+      <label class="field-label">또는 docx 파일로 불러오기</label>
+      <div class="drop-zone" id="drop-zone" tabindex="0" role="button"
+           aria-label="docx 파일 업로드 영역, 클릭하거나 파일을 끌어다 놓으세요">
+        <span class="drop-zone-icon">📂</span>
+        <strong>docx 파일을 드래그하거나 클릭하세요</strong><br>
+        <span style="font-size:12px">.docx 형식만 지원 (doc·hwp·pdf 불가)</span>
+        <input type="file" id="docx-input" accept=".docx">
+      </div>
+
+      <!-- docx 확인 체크박스 (GPT 보완 1) -->
+      <div class="docx-confirm-box" id="docx-confirm-box">
+        📋 docx에서 텍스트를 추출했습니다.<br>
+        <small>표·체크박스·이미지 안의 글자는 누락될 수 있으니 원문 입력란을 한 번 확인해 주세요.</small>
+        <label>
+          <input type="checkbox" id="docx-checked">
+          추출된 원문을 확인했습니다. (체크해야 생성 버튼이 활성화됩니다)
+        </label>
+      </div>
+    </div>
+
+  </section>
+
+
+  <!-- ══════════════════════════════════════════
+       3구역 — 자동 판단 결과 패널
+  ══════════════════════════════════════════ -->
+  <div class="status-panel" id="status-panel"></div>
+
+
+  <!-- ══════════════════════════════════════════
+       경고 / 오류 박스
+  ══════════════════════════════════════════ -->
+  <div class="alert-box error"   id="alert-error"></div>
+  <div class="alert-box warning" id="alert-warning"></div>
+
+
+  <!-- ══════════════════════════════════════════
+       생성 버튼
+  ══════════════════════════════════════════ -->
+  <button class="btn btn-primary" id="btn-generate" disabled>
+    ✨ 세특 프롬프트 생성
+  </button>
+
+
+  <!-- ══════════════════════════════════════════
+       4구역 — 생성 결과
+  ══════════════════════════════════════════ -->
+  <section class="section-card" id="output-section">
+    <div class="section-label">4구역 — 생성 결과</div>
+
+    <textarea id="output-text" readonly></textarea>
+
+    <div class="btn-row">
+      <button class="btn btn-amber" id="btn-copy">📋 복사</button>
+      <button class="btn btn-secondary" id="btn-download">💾 txt 다운로드</button>
+      <button class="btn btn-danger" id="btn-reset">🔄 초기화</button>
+    </div>
+  </section>
+
+</div><!-- /page-wrap -->
+
+<!-- 복사 완료 토스트 -->
+<div class="toast" id="toast">✅ 클립보드에 복사되었습니다</div>
+
+<!-- 푸터 -->
+<footer class="site-footer page-wrap">
+  <p>세특 프롬프트 생성기 | 오프라인 실행 · 서버 전송 없음 · 교사 전용 도구</p>
+</footer>
+
+<!-- ── JS 로드 순서 (의존성 순) ─────────────── -->
+<script src="lib/mammoth.min.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/curriculum.js"></script>
+<script src="js/presets.js"></script>
+<script src="js/extractor.js"></script>
+<script src="js/validator.js"></script>
+<script src="js/parser.js"></script>
+<script src="js/prompt.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>
