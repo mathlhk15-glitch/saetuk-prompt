@@ -1,0 +1,12 @@
+Copyright (c) 2026. All rights reserved.
+
+이 소프트웨어의 소스 코드는 저작권자의 소유입니다.
+저작권자의 명시적 허가 없이 복제, 수정, 배포, 판매를 금지합니다.
+
+개인 사용 및 학교 내부 사용 목적으로만 허용됩니다.
+
+---
+
+Third-party libraries:
+- mammoth.js v1.8.0 by Michael Williamson — MIT License
+  https://github.com/mwilliamson/mammoth.js
