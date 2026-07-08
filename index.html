@@ -32,12 +32,16 @@
   <div class="section-label" style="margin-bottom:10px;">무엇을 작성하시나요?</div>
   <div class="mode-switch">
     <button type="button" class="mode-switch-btn" id="mode-btn-homeroom">
-      <div class="ms-title">👨‍🏫 담임용 — 창체·행특</div>
-      <div class="ms-desc">자율활동 · 진로활동 · 동아리활동 · 행동특성 및 종합의견</div>
+      <div class="ms-title">👨‍🏫 담임용</div>
+      <div class="ms-desc">창체·행특 프롬프트 만들기 — 자율·진로·동아리활동, 행동특성 및 종합의견</div>
     </button>
     <button type="button" class="mode-switch-btn" id="mode-btn-subject">
-      <div class="ms-title">📚 교과용 — 세특</div>
-      <div class="ms-desc">수행평가 원문 기반 교과 세부능력 및 특기사항</div>
+      <div class="ms-title">📚 교과용</div>
+      <div class="ms-desc">학생별 세특 프롬프트 만들기 — 수행평가·자기평가서 원문 기반</div>
+    </button>
+    <button type="button" class="mode-switch-btn" id="mode-btn-guide">
+      <div class="ms-title">🧭 과목 AI 조교</div>
+      <div class="ms-desc">GPTs·Gem·Claude용 지침 만들기 — 과목 프로젝트를 처음 세팅할 때 한 번</div>
     </button>
   </div>
 
@@ -156,9 +160,12 @@
 
       <!-- 교사 관찰 메모 (전체 너비, 강조) -->
       <div class="field full observation-field">
-        <label class="field-label" for="observation-text">교사 관찰 메모 <span class="priority-badge">1순위 근거</span></label>
+        <label class="field-label" for="observation-text">교사 관찰 메모 <span class="priority-badge">선택 · 있으면 최우선 반영</span></label>
         <textarea id="observation-text" rows="3"
           placeholder="이 학생을 직접 보시면서 기억나는 장면이나 태도를 적어 주세요. (예: 모둠 토의에서 자료 출처를 다시 확인하자고 제안함) 비워두면 원문만으로 보수적으로 작성됩니다."></textarea>
+        <select id="observation-example-select" style="margin-top:8px;">
+          <option value="">💡 무엇을 써야 할지 막막하다면, 예시 문구를 선택해 추가하세요</option>
+        </select>
         <div class="file-attach-row">
           <label class="file-attach-btn" for="observation-file">📎 docx·pdf 파일에서 불러오기</label>
           <input type="file" id="observation-file" accept=".docx,.pdf" style="display:none;">
@@ -174,13 +181,13 @@
        2구역 — 원문 입력
   ══════════════════════════════════════════ -->
   <section class="section-card" id="sec-raw">
-    <div class="section-label">2구역 — 수행평가 원문 입력</div>
+    <div class="section-label">2구역 — 수행평가·자기평가서 원문 입력</div>
 
     <!-- 텍스트 붙여넣기 -->
     <div class="field">
       <label class="field-label" for="raw-text">원문 붙여넣기 <span class="req">*</span></label>
       <textarea id="raw-text" rows="12"
-        placeholder="수행평가지에서 학생 답변 부분을 복사해 붙여넣으세요."></textarea>
+        placeholder="수행평가지에서 학생 답변 부분을 복사하거나, 학생 자기평가서·소감문 등을 붙여넣으세요."></textarea>
       <div class="text-counter">
         <span id="char-count">0자</span>
         <span id="byte-count">약 0바이트</span>
@@ -292,9 +299,12 @@
       <div class="form-grid">
 
         <div class="field full observation-field">
-          <label class="field-label" for="hr-observation">교사 관찰 메모 <span class="priority-badge">1순위 근거</span></label>
+          <label class="field-label" for="hr-observation">교사 관찰 메모 <span class="priority-badge">선택 · 있으면 최우선 반영</span></label>
           <textarea id="hr-observation" rows="4"
             placeholder="이 학생을 직접 보시면서 기억나는 장면이나 태도를 적어 주세요. (예: 학급 행사 준비 중 의견이 갈릴 때 절충안을 제시함)"></textarea>
+          <select id="hr-observation-example-select" style="margin-top:8px;">
+            <option value="">💡 먼저 위에서 작성 항목을 선택하면 예시 문구가 나타납니다</option>
+          </select>
           <div class="file-attach-row">
             <label class="file-attach-btn" for="hr-observation-file">📎 docx·pdf 파일에서 불러오기</label>
             <input type="file" id="hr-observation-file" accept=".docx,.pdf" style="display:none;">
@@ -324,6 +334,202 @@
     </button>
 
   </div><!-- /panel-homeroom -->
+
+  <!-- ══════════════════════════════════════════
+       과목 AI 조교 패널 — 지침 생성
+  ══════════════════════════════════════════ -->
+  <div id="panel-guide" style="display:none;">
+
+    <div class="tab-scope-notice">
+      ℹ️ 이 탭은 학생별 세특을 바로 만드는 곳이 아닙니다. 교과별 GPTs·Gemini Gem·Claude Project를 <b>처음 만들 때 한 번</b> 사용하는 지침 생성 탭입니다.
+      학생별 세특 작성은 <b>📚 교과용</b> 탭에서 진행하세요.
+    </div>
+
+    <section class="section-card">
+      <div class="section-label">1구역 — 과목 정보</div>
+      <div class="form-grid">
+
+        <div class="field">
+          <label class="field-label" for="guide-school-year">학년도 <span class="req">*</span></label>
+          <select id="guide-school-year">
+            <option value="">선택</option>
+            <option value="2024">2024학년도</option>
+            <option value="2025">2025학년도</option>
+            <option value="2026">2026학년도</option>
+            <option value="2027">2027학년도</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="guide-grade">학년 <span class="req">*</span></label>
+          <select id="guide-grade">
+            <option value="">선택</option>
+            <option value="1">고1</option>
+            <option value="2">고2</option>
+            <option value="3">고3</option>
+          </select>
+        </div>
+
+        <div class="full"><div id="guide-curriculum-result"></div></div>
+
+        <div class="field">
+          <label class="field-label" for="guide-subject-name">교과명 <span class="req">*</span></label>
+          <input type="text" id="guide-subject-name" placeholder="예) 심화국어, 미적분, 물리학Ⅱ">
+          <div id="guide-group-hint" class="field-hint"></div>
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="guide-school-name">학교명 <span style="font-weight:400;color:var(--text-muted)">(선택)</span></label>
+          <input type="text" id="guide-school-name" placeholder="예) OO고등학교">
+        </div>
+
+        <div class="field full">
+          <label class="field-label">사용할 AI <span class="req">*</span></label>
+          <div class="platform-tabs" id="guide-platform-tabs">
+            <button type="button" class="platform-btn active" data-platform="common">공통</button>
+            <button type="button" class="platform-btn" data-platform="gpts">GPTs</button>
+            <button type="button" class="platform-btn" data-platform="gem">Gemini Gem</button>
+            <button type="button" class="platform-btn" data-platform="claude">Claude Project</button>
+          </div>
+        </div>
+
+        <div class="field full">
+          <button type="button" class="file-attach-btn" id="btn-toggle-guide-more" style="border-radius:6px;">더 입력할 내용 ▾</button>
+        </div>
+
+        <div class="field full" id="guide-more-fields" style="display:none;">
+          <div class="form-grid">
+            <div class="field">
+              <label class="field-label" for="guide-task-name">수행평가명</label>
+              <input type="text" id="guide-task-name" placeholder="예) 사회 문제 탐구 보고서">
+            </div>
+            <div class="field">
+              <label class="field-label" for="guide-product-types">학생 산출물 유형</label>
+              <input type="text" id="guide-product-types" placeholder="예) 보고서, 발표자료, 모둠활동지">
+            </div>
+            <div class="field full">
+              <label class="field-label" for="guide-eval-elements">평가요소</label>
+              <textarea id="guide-eval-elements" rows="2"></textarea>
+            </div>
+            <div class="field full">
+              <label class="field-label" for="guide-standards">성취기준</label>
+              <textarea id="guide-standards" rows="2"></textarea>
+            </div>
+            <div class="field full">
+              <label class="field-label" for="guide-rubric">채점기준 또는 루브릭</label>
+              <textarea id="guide-rubric" rows="2"></textarea>
+            </div>
+            <div class="field">
+              <label class="field-label">목표 문체</label>
+              <div class="radio-group">
+                <div class="radio-option">
+                  <input type="radio" name="guide-style" id="guide-style-fact" value="사실중심형">
+                  <label for="guide-style-fact">사실중심형</label>
+                </div>
+                <div class="radio-option">
+                  <input type="radio" name="guide-style" id="guide-style-balance" value="균형형" checked>
+                  <label for="guide-style-balance">균형형</label>
+                </div>
+                <div class="radio-option">
+                  <input type="radio" name="guide-style" id="guide-style-deep" value="심화형">
+                  <label for="guide-style-deep">심화형</label>
+                </div>
+              </div>
+            </div>
+            <div class="field">
+              <label class="field-label">기본 목표 분량</label>
+              <div class="radio-group">
+                <div class="radio-option">
+                  <input type="radio" name="guide-length" id="guide-len-500" value="500">
+                  <label for="guide-len-500">500바이트</label>
+                </div>
+                <div class="radio-option">
+                  <input type="radio" name="guide-length" id="guide-len-700" value="700" checked>
+                  <label for="guide-len-700">700바이트</label>
+                </div>
+                <div class="radio-option">
+                  <input type="radio" name="guide-length" id="guide-len-1000" value="1000">
+                  <label for="guide-len-1000">1000바이트</label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <section class="section-card">
+      <div class="section-label">2구역 — 평가계획서</div>
+      <div class="field">
+        <label class="field-label">평가계획서 파일 불러오기 <span style="font-weight:400;color:var(--text-muted)">(선택, docx·pdf)</span></label>
+        <div class="file-attach-row">
+          <label class="file-attach-btn" for="guide-plan-file">📎 docx·pdf 파일에서 불러오기</label>
+          <input type="file" id="guide-plan-file" accept=".docx,.pdf" style="display:none;">
+          <span class="file-attach-status" id="guide-plan-file-status"></span>
+        </div>
+        <div class="field-hint">이 파일은 서버로 전송되지 않고, 현재 브라우저에서만 읽습니다. PDF의 표·이미지·병합 셀은 일부 누락될 수 있으니 중요한 채점기준은 직접 확인해 주세요.</div>
+
+        <div id="guide-plan-preview-wrap" style="display:none;margin-top:10px;">
+          <label class="field-label">추출된 내용 미리보기</label>
+          <textarea id="guide-plan-preview" rows="6"></textarea>
+          <label style="display:flex;align-items:flex-start;gap:8px;font-weight:500;cursor:pointer;margin-top:8px;font-size:13px;">
+            <input type="checkbox" id="guide-plan-checked" style="width:auto;margin-top:3px;">
+            평가계획서에서 추출된 과목명, 수행평가명, 평가요소, 성취기준, 루브릭이 대체로 맞는지 확인했습니다.
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <div class="alert-box error" id="guide-alert-error"></div>
+    <div class="alert-box warning" id="guide-alert-warning"></div>
+
+    <button class="btn btn-primary" id="btn-generate-guide" disabled>
+      ✨ 지침 만들기
+    </button>
+
+    <section class="section-card" id="guide-output-section" style="display:none;">
+      <div class="section-label">생성 결과</div>
+      <div class="field-hint" style="background:var(--amber-pale);border:1px solid var(--amber);border-radius:var(--radius);padding:10px 12px;margin-bottom:6px;color:var(--text);">
+        💡 아래 내용은 세특 문장이 아니라, GPTs·Gemini Gem·Claude Project 등에 붙여넣을 <b>지침과 템플릿</b>입니다.
+      </div>
+
+      <div class="guide-block">
+        <h3>A. 프로젝트용 마스터 지침</h3>
+        <textarea class="guide-output-text" id="guide-out-master" readonly></textarea>
+        <div class="btn-row"><button type="button" class="btn btn-amber" data-copy-target="guide-out-master">📋 복사</button></div>
+      </div>
+
+      <div class="guide-block">
+        <h3>B. 평가계획서 요약 확인 프롬프트</h3>
+        <textarea class="guide-output-text" id="guide-out-summary" readonly></textarea>
+        <div class="btn-row"><button type="button" class="btn btn-amber" data-copy-target="guide-out-summary">📋 복사</button></div>
+      </div>
+
+      <div class="guide-block">
+        <h3>C. 학생별 입력 템플릿</h3>
+        <textarea class="guide-output-text" id="guide-out-template" readonly></textarea>
+        <div class="btn-row"><button type="button" class="btn btn-amber" data-copy-target="guide-out-template">📋 복사</button></div>
+      </div>
+
+      <div class="guide-block">
+        <h3>D. 학생별 입력 예시</h3>
+        <textarea class="guide-output-text" id="guide-out-example" readonly></textarea>
+        <div class="btn-row"><button type="button" class="btn btn-amber" data-copy-target="guide-out-example">📋 복사</button></div>
+      </div>
+
+      <div class="guide-block">
+        <h3>E. 최종 점검 체크리스트</h3>
+        <textarea class="guide-output-text" id="guide-out-checklist" readonly></textarea>
+        <div class="btn-row"><button type="button" class="btn btn-amber" data-copy-target="guide-out-checklist">📋 복사</button></div>
+      </div>
+
+      <div class="btn-row" style="margin-top:20px;border-top:1px solid var(--border);padding-top:16px;">
+        <button type="button" class="btn btn-secondary" id="btn-download-guide">💾 전체 저장 (txt)</button>
+      </div>
+    </section>
+
+  </div><!-- /panel-guide -->
 
   <!-- ══════════════════════════════════════════
        3구역 — 자동 판단 결과 패널 (교과용 전용)
@@ -371,11 +577,13 @@
 <script src="js/curriculum.js"></script>
 <script src="js/presets.js"></script>
 <script src="js/presets-homeroom.js"></script>
+<script src="js/presets-guide.js"></script>
 <script src="js/extractor.js"></script>
 <script src="js/validator.js"></script>
 <script src="js/parser.js"></script>
 <script src="js/prompt.js"></script>
 <script src="js/prompt-homeroom.js"></script>
+<script src="js/prompt-guide.js"></script>
 <script src="js/app.js"></script>
 
 </body>
