@@ -562,9 +562,11 @@ textarea { resize: vertical; line-height: 1.65; }
   display: flex;
   gap: 10px;
   margin-bottom: 24px;
+  flex-wrap: wrap;
 }
 .mode-switch-btn {
   flex: 1;
+  min-width: 200px;
   padding: 16px 14px;
   border: 2px solid var(--border);
   border-radius: var(--radius-lg);
@@ -639,3 +641,58 @@ textarea { resize: vertical; line-height: 1.65; }
 }
 .file-attach-status.ok { color: var(--green); }
 .file-attach-status.error { color: var(--red); }
+
+/* ── 과목 AI 조교(지침 생성) 탭 ──────────────────── */
+.platform-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+.platform-tabs button {
+  padding: 7px 16px;
+  border-radius: 20px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--navy-mid);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.platform-tabs button:hover { border-color: var(--navy-light); }
+.platform-tabs button.active {
+  background: var(--navy);
+  border-color: var(--navy);
+  color: #fff;
+}
+.guide-block { margin-top: 22px; }
+.guide-block h3 {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--navy);
+  margin: 0 0 6px;
+}
+.guide-output-text {
+  width: 100%;
+  min-height: 180px;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.7;
+  background: #f8f9fc;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  color: var(--text);
+  resize: vertical;
+}
+.tab-scope-notice {
+  background: var(--amber-pale);
+  border: 1.5px solid var(--amber);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  font-size: 13px;
+  color: var(--text);
+  margin-bottom: 18px;
+  line-height: 1.65;
+}
