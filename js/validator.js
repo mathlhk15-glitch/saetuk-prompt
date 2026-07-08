@@ -51,12 +51,8 @@ const Validator = (() => {
     if (!subjectName || !subjectName.trim()) {
       errors.push('교과명을 입력해 주세요.');
     }
-    if (!subjectGroup) {
-      errors.push('교과군을 선택해 주세요.');
-    }
-    if (!studentName || !studentName.trim()) {
-      errors.push('학생 식별명을 입력해 주세요.');
-    }
+    // 교과군은 교과명 입력 시 자동으로 결정되므로 별도 필수 검사 없음 (미판별 시 '진로·기타' 기본 프리셋 적용)
+    // 학생 식별명은 선택 사항. 비어 있으면 프롬프트에 "학생"으로 표시됨
     if (!rawText || !rawText.trim()) {
       errors.push('수행평가 원문을 입력해 주세요.');
     }
@@ -123,8 +119,7 @@ const Validator = (() => {
       docxUploaded, docxChecked,
     } = state;
 
-    if (!schoolYear || !grade || !subjectName?.trim() || !subjectGroup) return false;
-    if (!studentName?.trim()) return false;
+    if (!schoolYear || !grade || !subjectName?.trim()) return false;
     if (!rawText?.trim() || rawText.trim().length < MIN_TEXT_LENGTH) return false;
     if (!promptMode) return false;
     if (docxUploaded && !docxChecked) return false;
@@ -149,8 +144,7 @@ const Validator = (() => {
         if (!value || !value.trim()) return '교과명을 입력해 주세요.';
         return '';
       case 'studentName':
-        if (!value || !value.trim()) return '학생 식별명을 입력해 주세요.';
-        return '';
+        return ''; // 선택 사항 — 오류 표시 없음
       default:
         return '';
     }
@@ -171,7 +165,7 @@ const Validator = (() => {
     const { itemType, studentName, observationText, materialText } = inputData;
 
     if (!itemType) errors.push('작성 항목을 선택해 주세요.');
-    if (!studentName || !studentName.trim()) errors.push('학생 식별명을 입력해 주세요.');
+    // 학생 식별명은 선택 사항. 비어 있으면 프롬프트에 "학생"으로 표시됨
 
     const obsLen = observationText ? observationText.trim().length : 0;
     const matLen = materialText ? materialText.trim().length : 0;
@@ -190,7 +184,6 @@ const Validator = (() => {
    */
   function checkHomeroomGenerateButton(state) {
     if (!state.itemType) return false;
-    if (!state.studentName || !state.studentName.trim()) return false;
     const obsLen = state.observationText ? state.observationText.trim().length : 0;
     const matLen = state.materialText ? state.materialText.trim().length : 0;
     return (obsLen + matLen) > 0;

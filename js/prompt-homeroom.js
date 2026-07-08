@@ -21,6 +21,7 @@ const PromptHomeroom = (() => {
     } = inputData;
 
     const idLabel = studentId && studentId.trim() ? studentId.trim() : '미확인';
+    const nameLabel = studentName && studentName.trim() ? studentName.trim() : '학생(식별명 미입력)';
     const dateLabel = Utils.formatDate();
     const hasObservation = !!(observationText && observationText.trim());
     const hasMaterial = !!(materialText && materialText.trim());
@@ -29,11 +30,11 @@ const PromptHomeroom = (() => {
     const length = parseInt(targetLength, 10) || 700;
 
     const parts = [
-      _buildSummary({ studentName, itemLabel, hasObservation, hasMaterial, length, dateLabel }),
+      _buildSummary({ studentName: nameLabel, itemLabel, hasObservation, hasMaterial, length, dateLabel }),
       _buildRole(hasObservation, itemLabel),
       hasObservation ? _buildObservationBlock(observationText) : _buildNoObservationNotice(),
       hasMaterial ? _buildMaterialBlock(materialText) : '',
-      _buildInputInfo({ studentName, idLabel, itemLabel }),
+      _buildInputInfo({ studentName: nameLabel, idLabel, itemLabel }),
       itemFocus,
       Presets.STYLE_PRINCIPLES,
       PresetsHomeroom.STYLE_EXAMPLES_HOMEROOM,

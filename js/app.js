@@ -51,7 +51,11 @@
   const elNameSuggest     = $('name-suggest');
   const elIdSuggest       = $('id-suggest');
   const elObservationText = $('observation-text');
+  const elObservationFile  = $('observation-file');
+  const elObservationFileStatus = $('observation-file-status');
   const elMultiVersion    = $('multi-version');
+  const elBtnToggleMore   = $('btn-toggle-more');
+  const elSubjectMoreFields = $('subject-more-fields');
 
   // ── 모드 스위처 요소 ───────────────────────────
   const elModeBtnSubject  = $('mode-btn-subject');
@@ -63,7 +67,11 @@
   const elHrStudentName   = $('hr-student-name');
   const elHrStudentId     = $('hr-student-id');
   const elHrObservation   = $('hr-observation');
+  const elHrObservationFile = $('hr-observation-file');
+  const elHrObservationFileStatus = $('hr-observation-file-status');
   const elHrMaterial      = $('hr-material');
+  const elHrMaterialFile  = $('hr-material-file');
+  const elHrMaterialFileStatus = $('hr-material-file-status');
   const elBtnGenerateHr   = $('btn-generate-homeroom');
   const elHrAlertError    = $('hr-alert-error');
   const elHrAlertWarning  = $('hr-alert-warning');
@@ -220,6 +228,14 @@
     elObservationText.addEventListener('input', () => {
       state.observationText = elObservationText.value;
     });
+    elObservationFile.addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (file) {
+        attachFileToTextarea(file, elObservationText, elObservationFileStatus, text => {
+          state.observationText = text;
+        });
+      }
+    });
 
     // 다중 버전 출력 옵션
     elMultiVersion.addEventListener('change', () => {
@@ -229,6 +245,13 @@
     // 모드 스위처
     elModeBtnSubject.addEventListener('click', () => switchMode('subject'));
     elModeBtnHomeroom.addEventListener('click', () => switchMode('homeroom'));
+
+    // 더 입력할 내용 토글 (교과용)
+    elBtnToggleMore.addEventListener('click', () => {
+      const showing = elSubjectMoreFields.style.display !== 'none';
+      elSubjectMoreFields.style.display = showing ? 'none' : '';
+      elBtnToggleMore.textContent = showing ? '더 입력할 내용 ▾' : '더 입력할 내용 접기 ▴';
+    });
 
     // ── 담임용 이벤트 ─────────────────────────────
     document.querySelectorAll('input[name="hr-item"]').forEach(radio => {
@@ -249,9 +272,27 @@
       hrState.observationText = elHrObservation.value;
       updateHrGenerateButton();
     });
+    elHrObservationFile.addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (file) {
+        attachFileToTextarea(file, elHrObservation, elHrObservationFileStatus, text => {
+          hrState.observationText = text;
+          updateHrGenerateButton();
+        });
+      }
+    });
     elHrMaterial.addEventListener('input', () => {
       hrState.materialText = elHrMaterial.value;
       updateHrGenerateButton();
+    });
+    elHrMaterialFile.addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (file) {
+        attachFileToTextarea(file, elHrMaterial, elHrMaterialFileStatus, text => {
+          hrState.materialText = text;
+          updateHrGenerateButton();
+        });
+      }
     });
     elBtnGenerateHr.addEventListener('click', handleGenerateHomeroom);
 
@@ -316,7 +357,7 @@
         `원문에서 발견: <strong>${n}</strong>
          <span class="suggest-apply" data-type="name" data-val="${n}">[적용]</span>`
       ).join('<br>');
-      elNameSuggest.innerHTML = '👤 학생명 후보: ' + html;
+      elNameSuggest.innerHTML = '👤 원문에 실명이 포함되어 있을 수 있습니다. 적용하더라도 AI에 붙여넣기 전 번호·약칭으로 바꾸는 것을 권장합니다.<br>' + html;
       elNameSuggest.classList.add('show');
     } else {
       elNameSuggest.classList.remove('show');
@@ -520,6 +561,35 @@
     }, 30);
   }
 
+  // ── 관찰메모·학생자료 파일 첨부 공용 헬퍼 ───────
+  async function attachFileToTextarea(file, textareaEl, statusEl, onUpdated) {
+    statusEl.textContent = `⏳ "${file.name}" 불러오는 중...`;
+    statusEl.className = 'file-attach-status';
+
+    const result = await Parser.extractGeneric(file);
+
+    if (!result.ok) {
+      statusEl.textContent = `❌ ${result.error}`;
+      statusEl.className = 'file-attach-status error';
+      return;
+    }
+
+    const tag = `[첨부: ${file.name}]`;
+    const existing = textareaEl.value.trim();
+    const combined = existing ? `${existing}\n\n${tag}\n${result.text}` : `${tag}\n${result.text}`;
+    textareaEl.value = combined;
+    onUpdated(combined);
+
+    let statusMsg = `✅ "${file.name}"에서 ${result.text.length.toLocaleString()}자 불러옴`;
+    if (typeof Extractor !== 'undefined' && Extractor.hasGarbledText(result.text)) {
+      statusMsg += ' — ⚠️ 깨진 문자가 있는 것 같습니다. 내용을 확인해 주세요.';
+    } else {
+      statusMsg += ' — 내용을 확인해 주세요.';
+    }
+    statusEl.textContent = statusMsg;
+    statusEl.className = 'file-attach-status ok';
+  }
+
   // ── 모드 스위처 ────────────────────────────────
   function switchMode(mode) {
     if (mode === 'homeroom') {
@@ -527,7 +597,7 @@
       elPanelHomeroom.style.display = '';
       elModeBtnSubject.classList.remove('active');
       elModeBtnHomeroom.classList.add('active');
-    } else {
+    } else if (mode === 'subject') {
       elPanelHomeroom.style.display = 'none';
       elPanelSubject.style.display = '';
       elModeBtnHomeroom.classList.remove('active');
@@ -649,6 +719,8 @@
     elStudentId.value   = '';
     elRawText.value     = '';
     elObservationText.value = '';
+    elObservationFileStatus.textContent = '';
+    elObservationFileStatus.className = 'file-attach-status';
     elMultiVersion.checked  = false;
     elOutputText.value  = '';
 
@@ -675,7 +747,11 @@
     elHrStudentName.value = '';
     elHrStudentId.value   = '';
     elHrObservation.value = '';
+    elHrObservationFileStatus.textContent = '';
+    elHrObservationFileStatus.className = 'file-attach-status';
     elHrMaterial.value    = '';
+    elHrMaterialFileStatus.textContent = '';
+    elHrMaterialFileStatus.className = 'file-attach-status';
     document.querySelectorAll('input[name="hr-item"]').forEach(r => { r.checked = false; });
     document.querySelector('#hr-len-700').checked = true;
     hrState = {

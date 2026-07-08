@@ -1,22 +1,35 @@
 /**
- * parser.js — docx 텍스트 추출 (mammoth.js 기반)
+ * parser.js — docx/pdf 텍스트 추출 (mammoth.js / pdf.js 기반)
  *
  * 단락 + 표를 순서대로 추출하여 textarea에 삽입할 텍스트를 반환.
- * mammoth.min.js가 lib/ 폴더에 오프라인으로 내장되어 있어야 합니다.
+ * mammoth.min.js, pdf.min.js + pdf.worker.min.js가 lib/ 폴더에 오프라인으로 내장되어 있어야 합니다.
  *
  * 사용 예:
- *   const result = await Parser.extractFromFile(file);
+ *   const result = await Parser.extractFromFile(file);        // docx 전용 (기존 2구역 원문 업로드)
+ *   const result = await Parser.extractGeneric(file);         // docx 또는 pdf (교사 관찰 메모·학생 자료 첨부)
  *   if (result.ok) { textarea.value = result.text; }
  *   else { alert(result.error); }
  */
 
 const Parser = (() => {
 
+  // pdf.js 워커 경로 설정 (한 번만)
+  if (typeof pdfjsLib !== 'undefined' && pdfjsLib.GlobalWorkerOptions) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'lib/pdf.worker.min.js';
+  }
+
   /**
    * mammoth 가용 여부 확인
    */
   function isMammothAvailable() {
     return typeof mammoth !== 'undefined';
+  }
+
+  /**
+   * pdf.js 가용 여부 확인
+   */
+  function isPdfjsAvailable() {
+    return typeof pdfjsLib !== 'undefined';
   }
 
   /**
@@ -130,6 +143,74 @@ const Parser = (() => {
   }
 
   /**
+   * PDF 파일에서 텍스트 추출 (pdf.js 기반)
+   * @param {File} file
+   * @returns {Promise<{ ok: boolean, text: string, error: string }>}
+   */
+  async function extractFromPdf(file) {
+    if (!isPdfjsAvailable()) {
+      return {
+        ok: false,
+        text: '',
+        error: 'pdf.js 라이브러리를 찾을 수 없습니다. lib/pdf.min.js, lib/pdf.worker.min.js 파일이 있는지 확인해 주세요.',
+      };
+    }
+    if (!file) {
+      return { ok: false, text: '', error: '파일이 없습니다.' };
+    }
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (ext !== 'pdf') {
+      return { ok: false, text: '', error: '.pdf 파일만 지원합니다.' };
+    }
+
+    try {
+      const arrayBuffer = await _readFileAsArrayBuffer(file);
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+      let text = '';
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        const pageText = content.items.map(item => item.str || '').join(' ');
+        text += pageText + '\n\n';
+      }
+
+      text = text.replace(/\n{3,}/g, '\n\n').replace(/[ \t]+/g, ' ').trim();
+
+      if (!text) {
+        return {
+          ok: false,
+          text: '',
+          error: 'PDF에서 텍스트를 추출할 수 없었습니다. 스캔 이미지로 만들어진 PDF일 수 있습니다. 텍스트를 직접 붙여넣어 주세요.',
+        };
+      }
+
+      return { ok: true, text, error: '' };
+
+    } catch (e) {
+      console.error('[Parser] PDF 추출 오류:', e);
+      return {
+        ok: false,
+        text: '',
+        error: 'PDF 추출에 실패했습니다. 비밀번호로 보호된 파일이거나 손상되었을 수 있습니다. 텍스트를 직접 붙여넣기 해주세요.',
+      };
+    }
+  }
+
+  /**
+   * docx 또는 pdf 확장자를 자동 판별해 텍스트 추출 (교사 관찰 메모·학생 자료 첨부용)
+   * @param {File} file
+   * @returns {Promise<{ ok: boolean, text: string, error: string }>}
+   */
+  async function extractGeneric(file) {
+    if (!file) return { ok: false, text: '', error: '파일이 없습니다.' };
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (ext === 'docx') return extractFromFile(file);
+    if (ext === 'pdf') return extractFromPdf(file);
+    return { ok: false, text: '', error: '.docx 또는 .pdf 파일만 지원합니다. (doc, hwp 등은 지원하지 않습니다.)' };
+  }
+
+  /**
    * File → ArrayBuffer 변환 (Promise 래퍼)
    * @param {File} file
    * @returns {Promise<ArrayBuffer>}
@@ -156,8 +237,11 @@ const Parser = (() => {
 
   return {
     extractFromFile,
+    extractFromPdf,
+    extractGeneric,
     getDocxFromDrop,
     isMammothAvailable,
+    isPdfjsAvailable,
   };
 
 })();

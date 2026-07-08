@@ -60,6 +60,7 @@ const Prompt = (() => {
     // ── 보조 정보 계산 ──────────────────────────
     const gradeLabel = `고${grade}`;
     const idLabel    = studentId && studentId.trim() ? studentId.trim() : '미확인';
+    const nameLabel  = studentName && studentName.trim() ? studentName.trim() : '학생(식별명 미입력)';
     const dateLabel  = Utils.formatDate();
     const hasObservation = !!(observationText && observationText.trim());
 
@@ -72,7 +73,7 @@ const Prompt = (() => {
 
     // ── [처리 요약] ──────────────────────────────
     const summaryBlock = _buildSummary({
-      studentName, subjectName, gradeLabel,
+      studentName: nameLabel, subjectName, gradeLabel,
       schoolYear, curriculum, reason,
       promptMode, chars, bytes, modeLabel, dateLabel, hasObservation,
     });
@@ -85,7 +86,7 @@ const Prompt = (() => {
 
     // ── [입력 정보] ──────────────────────────────
     const inputInfoBlock = _buildInputInfo({
-      studentName, idLabel, subjectName, subjectGroup,
+      studentName: nameLabel, idLabel, subjectName, subjectGroup,
       schoolYear, gradeLabel, curriculum, reason, promptMode,
     });
 
