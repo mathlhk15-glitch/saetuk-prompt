@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>세특 프롬프트 생성기</title>
+  <title>AI 학생부 프롬프트 도우미</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -14,8 +14,8 @@
 <header class="site-header">
   <div class="header-inner">
     <div>
-      <div class="header-title">📋 세특 프롬프트 생성기</div>
-      <div class="header-sub">수행평가 원문 → AI 세특 작성 프롬프트 자동 생성</div>
+      <div class="header-title">📋 AI 학생부 프롬프트 도우미</div>
+      <div class="header-sub">교사 관찰과 학생 자료를 바탕으로 AI에 붙여넣을 세특·창체·행특 프롬프트 자동 생성</div>
     </div>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
       <a href="manual.html" target="_blank" class="btn-manual">📖 사용 매뉴얼 보기</a>
@@ -29,18 +29,19 @@
   <!-- ══════════════════════════════════════════
        모드 스위처
   ══════════════════════════════════════════ -->
+  <div class="section-label" style="margin-bottom:10px;">무엇을 작성하시나요?</div>
   <div class="mode-switch">
     <button type="button" class="mode-switch-btn" id="mode-btn-homeroom">
       <div class="ms-title">👨‍🏫 담임용 — 창체·행특</div>
       <div class="ms-desc">자율활동 · 진로활동 · 동아리활동 · 행동특성 및 종합의견</div>
     </button>
-    <button type="button" class="mode-switch-btn active" id="mode-btn-subject">
+    <button type="button" class="mode-switch-btn" id="mode-btn-subject">
       <div class="ms-title">📚 교과용 — 세특</div>
       <div class="ms-desc">수행평가 원문 기반 교과 세부능력 및 특기사항</div>
     </button>
   </div>
 
-  <div id="panel-subject">
+  <div id="panel-subject" style="display:none;">
 
   <!-- ══════════════════════════════════════════
        1구역 — 기본 정보 입력
@@ -86,65 +87,70 @@
         <div class="field-error" id="err-subject-name"></div>
       </div>
 
-      <!-- 교과군 -->
-      <div class="field">
-        <label class="field-label" for="subject-group">교과군 <span class="req">*</span></label>
-        <select id="subject-group">
-          <option value="">선택</option>
-          <option value="국어">국어</option>
-          <option value="수학">수학</option>
-          <option value="과학">과학</option>
-          <option value="사회">사회</option>
-          <option value="영어">영어</option>
-          <option value="예술">예술(음악·미술)</option>
-          <option value="체육">체육</option>
-          <option value="기술·정보">기술·정보</option>
-          <option value="제2외국어·한문">제2외국어·한문</option>
-          <option value="진로·기타">진로·기타</option>
-        </select>
-      </div>
-
       <!-- 학생 식별명 -->
       <div class="field">
-        <label class="field-label" for="student-name">학생 식별명 <span class="req">*</span></label>
-        <input type="text" id="student-name" placeholder="예) 1번, 3반 15번, A학생 (실명 대신 사용을 권장합니다)">
-        <div class="field-hint">외부 AI 서비스로 전송되므로 실명보다 번호·약칭 사용을 권장합니다.</div>
+        <label class="field-label" for="student-name">학생 식별명 <span style="font-weight:400;color:var(--text-muted)">(선택)</span></label>
+        <input type="text" id="student-name" placeholder="예) 1번, 3반 15번, A학생 (비워두면 '학생'으로 표시됩니다)">
+        <div class="field-hint">입력하면 실명보다 번호·약칭을 권장합니다. 외부 AI 서비스로 전송됩니다.</div>
         <div class="extract-suggest" id="name-suggest"></div>
         <div class="field-error" id="err-student-name"></div>
       </div>
 
-      <!-- 학번 -->
-      <div class="field">
-        <label class="field-label" for="student-id">학번 <span style="font-weight:400;color:var(--text-muted)">(선택)</span></label>
-        <input type="text" id="student-id" placeholder="예) 30419">
-        <div class="extract-suggest" id="id-suggest"></div>
+      <!-- 더 입력할 내용 토글 -->
+      <div class="field full">
+        <button type="button" class="file-attach-btn" id="btn-toggle-more" style="border-radius:6px;">더 입력할 내용 ▾</button>
       </div>
 
-      <!-- 프롬프트 강도 (전체 너비) -->
-      <div class="field full">
-        <label class="field-label">프롬프트 강도 <span class="req">*</span></label>
-        <div class="radio-group">
-          <div class="radio-option">
-            <input type="radio" name="prompt-mode" id="mode-normal" value="사실중심">
-            <label for="mode-normal">
-              <span class="radio-emoji">📝</span>
-              사실중심형
+      <div class="field full" id="subject-more-fields" style="display:none;">
+        <div class="form-grid">
+
+          <!-- 교과군: 교과명 입력 시 자동 결정되므로 화면에 노출하지 않음 -->
+          <input type="hidden" id="subject-group" value="">
+          <div class="field-hint" style="margin-top:-6px;">교과군은 교과명을 바탕으로 자동으로 판단되어 별도로 선택할 필요가 없습니다.</div>
+
+          <!-- 학번 -->
+          <div class="field">
+            <label class="field-label" for="student-id">학번 <span style="font-weight:400;color:var(--text-muted)">(선택)</span></label>
+            <input type="text" id="student-id" placeholder="예) 30419">
+            <div class="extract-suggest" id="id-suggest"></div>
+          </div>
+
+          <!-- 프롬프트 강도 (전체 너비) -->
+          <div class="field full">
+            <label class="field-label">프롬프트 강도 <span class="req">*</span></label>
+            <div class="radio-group">
+              <div class="radio-option">
+                <input type="radio" name="prompt-mode" id="mode-normal" value="사실중심">
+                <label for="mode-normal">
+                  <span class="radio-emoji">📝</span>
+                  사실중심형
+                </label>
+              </div>
+              <div class="radio-option">
+                <input type="radio" name="prompt-mode" id="mode-hakjong" value="균형" checked>
+                <label for="mode-hakjong">
+                  <span class="radio-emoji">🎯</span>
+                  균형형
+                </label>
+              </div>
+              <div class="radio-option">
+                <input type="radio" name="prompt-mode" id="mode-top" value="심화">
+                <label for="mode-top">
+                  <span class="radio-emoji">⭐</span>
+                  심화형
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- 다중 버전 출력 옵션 (전체 너비) -->
+          <div class="field full">
+            <label style="display:flex;align-items:center;gap:8px;font-weight:500;cursor:pointer;">
+              <input type="checkbox" id="multi-version" style="width:auto;">
+              500 / 700 / 1000바이트 3개 버전 모두 생성 (선택 — 기본은 700바이트 1개만 생성)
             </label>
           </div>
-          <div class="radio-option">
-            <input type="radio" name="prompt-mode" id="mode-hakjong" value="균형" checked>
-            <label for="mode-hakjong">
-              <span class="radio-emoji">🎯</span>
-              균형형
-            </label>
-          </div>
-          <div class="radio-option">
-            <input type="radio" name="prompt-mode" id="mode-top" value="심화">
-            <label for="mode-top">
-              <span class="radio-emoji">⭐</span>
-              심화형
-            </label>
-          </div>
+
         </div>
       </div>
 
@@ -153,14 +159,11 @@
         <label class="field-label" for="observation-text">교사 관찰 메모 <span class="priority-badge">1순위 근거</span></label>
         <textarea id="observation-text" rows="3"
           placeholder="이 학생을 직접 보시면서 기억나는 장면이나 태도를 적어 주세요. (예: 모둠 토의에서 자료 출처를 다시 확인하자고 제안함) 비워두면 원문만으로 보수적으로 작성됩니다."></textarea>
-      </div>
-
-      <!-- 다중 버전 출력 옵션 (전체 너비) -->
-      <div class="field full">
-        <label style="display:flex;align-items:center;gap:8px;font-weight:500;cursor:pointer;">
-          <input type="checkbox" id="multi-version" style="width:auto;">
-          500 / 700 / 1000바이트 3개 버전 모두 생성 (선택 — 기본은 700바이트 1개만 생성)
-        </label>
+        <div class="file-attach-row">
+          <label class="file-attach-btn" for="observation-file">📎 docx·pdf 파일에서 불러오기</label>
+          <input type="file" id="observation-file" accept=".docx,.pdf" style="display:none;">
+          <span class="file-attach-status" id="observation-file-status"></span>
+        </div>
       </div>
 
     </div><!-- /form-grid -->
@@ -253,8 +256,8 @@
         </div>
 
         <div class="field">
-          <label class="field-label" for="hr-student-name">학생 식별명 <span class="req">*</span></label>
-          <input type="text" id="hr-student-name" placeholder="예) 1번, 3반 15번 (실명 대신 사용을 권장합니다)">
+          <label class="field-label" for="hr-student-name">학생 식별명 <span style="font-weight:400;color:var(--text-muted)">(선택)</span></label>
+          <input type="text" id="hr-student-name" placeholder="예) 1번, 3반 15번 (비워두면 '학생'으로 표시됩니다)">
           <div class="field-error" id="err-hr-student-name"></div>
         </div>
 
@@ -292,12 +295,22 @@
           <label class="field-label" for="hr-observation">교사 관찰 메모 <span class="priority-badge">1순위 근거</span></label>
           <textarea id="hr-observation" rows="4"
             placeholder="이 학생을 직접 보시면서 기억나는 장면이나 태도를 적어 주세요. (예: 학급 행사 준비 중 의견이 갈릴 때 절충안을 제시함)"></textarea>
+          <div class="file-attach-row">
+            <label class="file-attach-btn" for="hr-observation-file">📎 docx·pdf 파일에서 불러오기</label>
+            <input type="file" id="hr-observation-file" accept=".docx,.pdf" style="display:none;">
+            <span class="file-attach-status" id="hr-observation-file-status"></span>
+          </div>
         </div>
 
         <div class="field full">
           <label class="field-label" for="hr-material">학생 자료 (선택 — 자기평가서·상담자료·활동기록 등)</label>
           <textarea id="hr-material" rows="4"
             placeholder="학생이 작성한 자기평가서, 소감문, 활동 기록 등을 붙여넣으세요. 보조 근거로만 사용되며 그대로 옮겨지지 않습니다."></textarea>
+          <div class="file-attach-row">
+            <label class="file-attach-btn" for="hr-material-file">📎 docx·pdf 파일에서 불러오기</label>
+            <input type="file" id="hr-material-file" accept=".docx,.pdf" style="display:none;">
+            <span class="file-attach-status" id="hr-material-file-status"></span>
+          </div>
         </div>
 
       </div>
@@ -327,6 +340,10 @@
   ══════════════════════════════════════════ -->
   <section class="section-card" id="output-section">
     <div class="section-label">4구역 — 생성 결과</div>
+    <div class="field-hint" style="background:var(--amber-pale);border:1px solid var(--amber);border-radius:var(--radius);padding:10px 12px;margin-bottom:10px;color:var(--text);">
+      💡 아래 내용은 세특 문장이 아니라, <b>ChatGPT·Claude·Gemini 등 AI 채팅창에 붙여넣을 프롬프트</b>입니다.
+      복사한 뒤 AI 채팅창에 붙여넣고, AI가 만든 초안을 교사가 검토·수정해 사용하세요.
+    </div>
 
     <textarea id="output-text" readonly></textarea>
 
@@ -349,6 +366,7 @@
 
 <!-- ── JS 로드 순서 (의존성 순) ─────────────── -->
 <script src="lib/mammoth.min.js"></script>
+<script src="lib/pdf.min.js"></script>
 <script src="js/utils.js"></script>
 <script src="js/curriculum.js"></script>
 <script src="js/presets.js"></script>
