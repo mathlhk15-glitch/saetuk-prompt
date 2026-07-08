@@ -609,3 +609,33 @@ textarea { resize: vertical; line-height: 1.65; }
   margin-left: 6px;
   vertical-align: middle;
 }
+
+/* ── 관찰메모·학생자료 파일 첨부 컨트롤 ─────────── */
+.file-attach-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+.file-attach-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 20px;
+  padding: 5px 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--navy-mid);
+  cursor: pointer;
+  transition: var(--transition);
+}
+.file-attach-btn:hover { border-color: var(--navy-light); background: var(--bg); }
+.file-attach-status {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.file-attach-status.ok { color: var(--green); }
+.file-attach-status.error { color: var(--red); }
