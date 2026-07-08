@@ -53,6 +53,7 @@
   const elObservationText = $('observation-text');
   const elObservationFile  = $('observation-file');
   const elObservationFileStatus = $('observation-file-status');
+  const elObservationExampleSelect = $('observation-example-select');
   const elMultiVersion    = $('multi-version');
   const elBtnToggleMore   = $('btn-toggle-more');
   const elSubjectMoreFields = $('subject-more-fields');
@@ -60,8 +61,36 @@
   // ── 모드 스위처 요소 ───────────────────────────
   const elModeBtnSubject  = $('mode-btn-subject');
   const elModeBtnHomeroom = $('mode-btn-homeroom');
+  const elModeBtnGuide    = $('mode-btn-guide');
   const elPanelSubject    = $('panel-subject');
   const elPanelHomeroom   = $('panel-homeroom');
+  const elPanelGuide      = $('panel-guide');
+
+  // ── 과목 AI 조교 탭 UI 요소 참조 ───────────────
+  const elGuideSchoolYear   = $('guide-school-year');
+  const elGuideGrade        = $('guide-grade');
+  const elGuideCurriculum   = $('guide-curriculum-result');
+  const elGuideSubjectName  = $('guide-subject-name');
+  const elGuideGroupHint    = $('guide-group-hint');
+  const elGuideSchoolName   = $('guide-school-name');
+  const elGuidePlatformTabs = $('guide-platform-tabs');
+  const elBtnToggleGuideMore = $('btn-toggle-guide-more');
+  const elGuideMoreFields   = $('guide-more-fields');
+  const elGuideTaskName     = $('guide-task-name');
+  const elGuideProductTypes = $('guide-product-types');
+  const elGuideEvalElements = $('guide-eval-elements');
+  const elGuideStandards    = $('guide-standards');
+  const elGuideRubric       = $('guide-rubric');
+  const elGuidePlanFile     = $('guide-plan-file');
+  const elGuidePlanFileStatus = $('guide-plan-file-status');
+  const elGuidePlanPreviewWrap = $('guide-plan-preview-wrap');
+  const elGuidePlanPreview  = $('guide-plan-preview');
+  const elGuidePlanChecked  = $('guide-plan-checked');
+  const elBtnGenerateGuide  = $('btn-generate-guide');
+  const elGuideOutputSection = $('guide-output-section');
+  const elGuideAlertError   = $('guide-alert-error');
+  const elGuideAlertWarning = $('guide-alert-warning');
+  const elBtnDownloadGuide  = $('btn-download-guide');
 
   // ── 담임용 UI 요소 참조 ────────────────────────
   const elHrStudentName   = $('hr-student-name');
@@ -69,6 +98,7 @@
   const elHrObservation   = $('hr-observation');
   const elHrObservationFile = $('hr-observation-file');
   const elHrObservationFileStatus = $('hr-observation-file-status');
+  const elHrObservationExampleSelect = $('hr-observation-example-select');
   const elHrMaterial      = $('hr-material');
   const elHrMaterialFile  = $('hr-material-file');
   const elHrMaterialFileStatus = $('hr-material-file-status');
@@ -102,6 +132,27 @@
     targetLength: '700',
   };
 
+  // ── 과목 AI 조교 탭 내부 상태 ──────────────────
+  let guideState = {
+    schoolYear: '',
+    grade: '',
+    subjectName: '',
+    subjectGroup: '',
+    schoolName: '',
+    platform: 'common',
+    taskName: '',
+    productTypes: '',
+    evalElements: '',
+    standards: '',
+    rubric: '',
+    styleBasis: '균형형',
+    targetLength: '700',
+    planUploaded: false,
+    planChecked: false,
+    planExtractedText: '',
+    generated: null,
+  };
+
   // ── 초기화 ─────────────────────────────────────
   function init() {
     // 학년도 기본값: 현재 연도
@@ -116,8 +167,47 @@
     const defaultMode = document.querySelector('input[name="prompt-mode"]:checked');
     if (defaultMode) state.promptMode = defaultMode.value;
 
+    populateObservationExampleSelect();
+
     bindEvents();
     updateAll();
+  }
+
+  // ── 교사 관찰 메모 예시 드롭다운 채우기 (교과용) ─
+  function populateObservationExampleSelect() {
+    Object.entries(Presets.OBSERVATION_EXAMPLES).forEach(([category, phrases]) => {
+      const group = document.createElement('optgroup');
+      group.label = category;
+      phrases.forEach(phrase => {
+        const opt = document.createElement('option');
+        opt.value = phrase;
+        opt.textContent = phrase;
+        group.appendChild(opt);
+      });
+      elObservationExampleSelect.appendChild(group);
+    });
+  }
+
+  // ── 담임용 교사 관찰 메모 예시 드롭다운 채우기 (항목별) ─
+  function populateHrObservationExampleSelect(itemType) {
+    // 기존 옵션 제거 (첫 안내 옵션 제외)
+    elHrObservationExampleSelect.innerHTML = '';
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    if (!itemType) {
+      placeholder.textContent = '💡 먼저 위에서 작성 항목을 선택하면 예시 문구가 나타납니다';
+      elHrObservationExampleSelect.appendChild(placeholder);
+      return;
+    }
+    placeholder.textContent = '💡 무엇을 써야 할지 막막하다면, 예시 문구를 선택해 추가하세요';
+    elHrObservationExampleSelect.appendChild(placeholder);
+    const phrases = PresetsHomeroom.OBSERVATION_EXAMPLES[itemType] || [];
+    phrases.forEach(phrase => {
+      const opt = document.createElement('option');
+      opt.value = phrase;
+      opt.textContent = phrase;
+      elHrObservationExampleSelect.appendChild(opt);
+    });
   }
 
   // ── 이벤트 바인딩 ──────────────────────────────
@@ -236,6 +326,15 @@
         });
       }
     });
+    elObservationExampleSelect.addEventListener('change', () => {
+      const phrase = elObservationExampleSelect.value;
+      if (!phrase) return;
+      const existing = elObservationText.value.trim();
+      const combined = existing ? `${existing}\n${phrase}` : phrase;
+      elObservationText.value = combined;
+      state.observationText = combined;
+      elObservationExampleSelect.value = '';
+    });
 
     // 다중 버전 출력 옵션
     elMultiVersion.addEventListener('change', () => {
@@ -245,6 +344,7 @@
     // 모드 스위처
     elModeBtnSubject.addEventListener('click', () => switchMode('subject'));
     elModeBtnHomeroom.addEventListener('click', () => switchMode('homeroom'));
+    elModeBtnGuide.addEventListener('click', () => switchMode('guide'));
 
     // 더 입력할 내용 토글 (교과용)
     elBtnToggleMore.addEventListener('click', () => {
@@ -257,6 +357,7 @@
     document.querySelectorAll('input[name="hr-item"]').forEach(radio => {
       radio.addEventListener('change', () => {
         hrState.itemType = radio.value;
+        populateHrObservationExampleSelect(radio.value);
         updateHrGenerateButton();
       });
     });
@@ -270,6 +371,16 @@
     elHrStudentId.addEventListener('input', () => { hrState.studentId = elHrStudentId.value; });
     elHrObservation.addEventListener('input', () => {
       hrState.observationText = elHrObservation.value;
+      updateHrGenerateButton();
+    });
+    elHrObservationExampleSelect.addEventListener('change', () => {
+      const phrase = elHrObservationExampleSelect.value;
+      if (!phrase) return;
+      const existing = elHrObservation.value.trim();
+      const combined = existing ? `${existing}\n${phrase}` : phrase;
+      elHrObservation.value = combined;
+      hrState.observationText = combined;
+      elHrObservationExampleSelect.value = '';
       updateHrGenerateButton();
     });
     elHrObservationFile.addEventListener('change', e => {
@@ -295,6 +406,81 @@
       }
     });
     elBtnGenerateHr.addEventListener('click', handleGenerateHomeroom);
+
+    // ── 과목 AI 조교 탭 이벤트 ─────────────────────
+    elGuideSchoolYear.addEventListener('change', () => {
+      guideState.schoolYear = elGuideSchoolYear.value;
+      updateGuideCurriculumDisplay();
+      updateGuideGenerateButton();
+    });
+    elGuideGrade.addEventListener('change', () => {
+      guideState.grade = elGuideGrade.value;
+      updateGuideCurriculumDisplay();
+      updateGuideGenerateButton();
+    });
+    elGuideSubjectName.addEventListener('input', () => {
+      guideState.subjectName = elGuideSubjectName.value;
+      const guessed = Extractor.guessSubjectGroup(guideState.subjectName);
+      if (guessed) {
+        guideState.subjectGroup = guessed;
+        elGuideGroupHint.textContent = `✅ "${guessed}" 교과군으로 자동 판단되었습니다.`;
+        elGuideGroupHint.classList.add('show');
+      } else {
+        elGuideGroupHint.classList.remove('show');
+      }
+      updateGuideGenerateButton();
+    });
+    elGuideSchoolName.addEventListener('input', () => { guideState.schoolName = elGuideSchoolName.value; });
+    elGuidePlatformTabs.querySelectorAll('.platform-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        elGuidePlatformTabs.querySelectorAll('.platform-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        guideState.platform = btn.dataset.platform;
+        updateGuideGenerateButton();
+      });
+    });
+    elBtnToggleGuideMore.addEventListener('click', () => {
+      const showing = elGuideMoreFields.style.display !== 'none';
+      elGuideMoreFields.style.display = showing ? 'none' : '';
+      elBtnToggleGuideMore.textContent = showing ? '더 입력할 내용 ▾' : '더 입력할 내용 접기 ▴';
+    });
+    elGuideTaskName.addEventListener('input', () => { guideState.taskName = elGuideTaskName.value; });
+    elGuideProductTypes.addEventListener('input', () => { guideState.productTypes = elGuideProductTypes.value; });
+    elGuideEvalElements.addEventListener('input', () => { guideState.evalElements = elGuideEvalElements.value; });
+    elGuideStandards.addEventListener('input', () => { guideState.standards = elGuideStandards.value; });
+    elGuideRubric.addEventListener('input', () => { guideState.rubric = elGuideRubric.value; });
+    document.querySelectorAll('input[name="guide-style"]').forEach(r => {
+      r.addEventListener('change', () => { guideState.styleBasis = r.value; });
+    });
+    document.querySelectorAll('input[name="guide-length"]').forEach(r => {
+      r.addEventListener('change', () => { guideState.targetLength = r.value; });
+    });
+    elGuidePlanFile.addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (file) handleGuidePlanFile(file);
+    });
+    elGuidePlanPreview.addEventListener('input', () => {
+      guideState.planExtractedText = elGuidePlanPreview.value;
+    });
+    elGuidePlanChecked.addEventListener('change', () => {
+      guideState.planChecked = elGuidePlanChecked.checked;
+      updateGuideGenerateButton();
+    });
+    elBtnGenerateGuide.addEventListener('click', handleGenerateGuide);
+    elBtnDownloadGuide.addEventListener('click', handleDownloadGuide);
+    document.querySelectorAll('#guide-output-section [data-copy-target]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const ta = document.getElementById(btn.dataset.copyTarget);
+        if (!ta || !ta.value) return;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(ta.value).then(() => showToast());
+        } else {
+          ta.select();
+          document.execCommand('copy');
+          showToast();
+        }
+      });
+    });
 
     // 생성 버튼
     elBtnGenerate.addEventListener('click', handleGenerate);
@@ -592,20 +778,28 @@
 
   // ── 모드 스위처 ────────────────────────────────
   function switchMode(mode) {
+    elPanelSubject.style.display = 'none';
+    elPanelHomeroom.style.display = 'none';
+    elPanelGuide.style.display = 'none';
+    elModeBtnSubject.classList.remove('active');
+    elModeBtnHomeroom.classList.remove('active');
+    elModeBtnGuide.classList.remove('active');
+
     if (mode === 'homeroom') {
-      elPanelSubject.style.display = 'none';
       elPanelHomeroom.style.display = '';
-      elModeBtnSubject.classList.remove('active');
       elModeBtnHomeroom.classList.add('active');
     } else if (mode === 'subject') {
-      elPanelHomeroom.style.display = 'none';
       elPanelSubject.style.display = '';
-      elModeBtnHomeroom.classList.remove('active');
       elModeBtnSubject.classList.add('active');
+    } else if (mode === 'guide') {
+      elPanelGuide.style.display = '';
+      elModeBtnGuide.classList.add('active');
     }
+
     elOutputSection.classList.remove('show');
     clearAlerts();
     clearHrAlerts();
+    clearGuideAlerts();
   }
 
   // ── 담임용 생성 버튼 활성화 제어 ───────────────
@@ -668,6 +862,150 @@
         updateHrGenerateButton();
       }
     }, 30);
+  }
+
+  // ── 과목 AI 조교 탭: 교육과정 표시 ─────────────
+  function updateGuideCurriculumDisplay() {
+    if (guideState.schoolYear && guideState.grade) {
+      elGuideCurriculum.textContent = Curriculum.getLabel(guideState.schoolYear, guideState.grade);
+      elGuideCurriculum.classList.add('show');
+    } else {
+      elGuideCurriculum.classList.remove('show');
+    }
+  }
+
+  // ── 과목 AI 조교 탭: 생성 버튼 활성화 제어 ─────
+  function updateGuideGenerateButton() {
+    elBtnGenerateGuide.disabled = !Validator.checkGuideGenerateButton(guideState);
+  }
+
+  // ── 과목 AI 조교 탭: 알림 헬퍼 ─────────────────
+  function showGuideAlert(type, msg) {
+    const el = type === 'error' ? elGuideAlertError : elGuideAlertWarning;
+    el.textContent = msg;
+    el.classList.add('show');
+  }
+  function clearGuideAlerts() {
+    elGuideAlertError.classList.remove('show');
+    elGuideAlertWarning.classList.remove('show');
+  }
+
+  // ── 과목 AI 조교 탭: 평가계획서 파일 첨부 ──────
+  async function handleGuidePlanFile(file) {
+    elGuidePlanFileStatus.textContent = `⏳ "${file.name}" 불러오는 중...`;
+    elGuidePlanFileStatus.className = 'file-attach-status';
+
+    const result = await Parser.extractGeneric(file);
+
+    if (!result.ok) {
+      elGuidePlanFileStatus.textContent = `❌ ${result.error}`;
+      elGuidePlanFileStatus.className = 'file-attach-status error';
+      guideState.planUploaded = false;
+      guideState.planChecked = false;
+      elGuidePlanPreviewWrap.style.display = 'none';
+      updateGuideGenerateButton();
+      return;
+    }
+
+    guideState.planUploaded = true;
+    guideState.planChecked = false;
+    guideState.planExtractedText = result.text;
+
+    elGuidePlanPreview.value = result.text;
+    elGuidePlanChecked.checked = false;
+    elGuidePlanPreviewWrap.style.display = '';
+
+    elGuidePlanFileStatus.textContent = `✅ "${file.name}"에서 ${result.text.length.toLocaleString()}자 불러옴 — 아래 미리보기를 확인해 주세요.`;
+    elGuidePlanFileStatus.className = 'file-attach-status ok';
+
+    updateGuideGenerateButton();
+  }
+
+  // ── 과목 AI 조교 탭: 생성 버튼 클릭 ────────────
+  function handleGenerateGuide() {
+    clearGuideAlerts();
+
+    const inputData = {
+      schoolYear: guideState.schoolYear,
+      grade: guideState.grade,
+      subjectName: guideState.subjectName,
+      subjectGroup: guideState.subjectGroup,
+      schoolName: guideState.schoolName,
+      platform: guideState.platform,
+      performanceTaskName: guideState.taskName,
+      evaluationElements: guideState.evalElements,
+      achievementStandards: guideState.standards,
+      rubric: guideState.rubric,
+      productTypes: guideState.productTypes,
+      targetLength: guideState.targetLength,
+      styleBasis: guideState.styleBasis,
+      planExtractedText: guideState.planExtractedText,
+      planUploaded: guideState.planUploaded,
+      planChecked: guideState.planChecked,
+    };
+
+    const { valid, errors, warnings } = Validator.validateGuide(inputData);
+
+    if (!valid) {
+      showGuideAlert('error', '⚠️ 입력을 확인해 주세요:\n• ' + errors.join('\n• '));
+      return;
+    }
+    if (warnings.length > 0) {
+      showGuideAlert('warning', warnings.join('\n'));
+    }
+
+    elBtnGenerateGuide.disabled = true;
+    elBtnGenerateGuide.innerHTML = '<span class="spinner"></span> 생성 중...';
+
+    setTimeout(() => {
+      try {
+        const result = PromptGuide.generateGuidePrompts(inputData);
+        guideState.generated = result;
+
+        $('guide-out-master').value = result.masterGuide;
+        $('guide-out-summary').value = result.summaryCheckPrompt;
+        $('guide-out-template').value = result.studentTemplate;
+        $('guide-out-example').value = result.studentExample;
+        $('guide-out-checklist').value = result.checklist;
+
+        elGuideOutputSection.style.display = '';
+        elGuideOutputSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } catch (e) {
+        console.error('[app] 과목 AI 조교 지침 생성 오류:', e);
+        showGuideAlert('error', '지침 생성 중 오류가 발생했습니다. 페이지를 새로고침 후 다시 시도해 주세요.');
+      } finally {
+        elBtnGenerateGuide.disabled = false;
+        elBtnGenerateGuide.innerHTML = '✨ 지침 만들기';
+        updateGuideGenerateButton();
+      }
+    }, 30);
+  }
+
+  // ── 과목 AI 조교 탭: 전체 저장 ─────────────────
+  function handleDownloadGuide() {
+    if (!guideState.generated) return;
+    const g = guideState.generated;
+    const text = [
+      `=== A. 프로젝트용 마스터 지침 ===\n${g.masterGuide}`,
+      `=== B. 평가계획서 요약 확인 프롬프트 ===\n${g.summaryCheckPrompt}`,
+      `=== C. 학생별 입력 템플릿 ===\n${g.studentTemplate}`,
+      `=== D. 학생별 입력 예시 ===\n${g.studentExample}`,
+      `=== E. 최종 점검 체크리스트 ===\n${g.checklist}`,
+    ].join('\n\n----------------------------------------\n\n');
+
+    const subj = Utils.sanitizeFilename(guideState.subjectName) || '과목';
+    const date = Utils.formatDate().replace(/-/g, '');
+    const filename = `${subj}_AI지침_${date}.txt`;
+
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 
   // ── 복사 ──────────────────────────────────────
@@ -753,6 +1091,7 @@
     elHrMaterialFileStatus.textContent = '';
     elHrMaterialFileStatus.className = 'file-attach-status';
     document.querySelectorAll('input[name="hr-item"]').forEach(r => { r.checked = false; });
+    populateHrObservationExampleSelect('');
     document.querySelector('#hr-len-700').checked = true;
     hrState = {
       itemType: '',

@@ -19,7 +19,7 @@ const Validator = (() => {
    * @param {string}        inputData.subjectName  - 교과명
    * @param {string}        inputData.subjectGroup - 교과군
    * @param {string}        inputData.studentName  - 학생명
-   * @param {string}        inputData.rawText      - 수행평가 원문
+   * @param {string}        inputData.rawText      - 수행평가·자기평가서 원문
    * @param {string}        inputData.promptMode   - 프롬프트 강도
    * @param {boolean}       inputData.docxChecked  - docx 확인 체크 여부
    * @param {boolean}       inputData.docxUploaded - docx 업로드 사용 여부
@@ -54,7 +54,7 @@ const Validator = (() => {
     // 교과군은 교과명 입력 시 자동으로 결정되므로 별도 필수 검사 없음 (미판별 시 '진로·기타' 기본 프리셋 적용)
     // 학생 식별명은 선택 사항. 비어 있으면 프롬프트에 "학생"으로 표시됨
     if (!rawText || !rawText.trim()) {
-      errors.push('수행평가 원문을 입력해 주세요.');
+      errors.push('수행평가·자기평가서 원문을 입력해 주세요.');
     }
     if (!promptMode) {
       errors.push('프롬프트 강도를 선택해 주세요.');
@@ -170,9 +170,8 @@ const Validator = (() => {
     const obsLen = observationText ? observationText.trim().length : 0;
     const matLen = materialText ? materialText.trim().length : 0;
     if (obsLen === 0 && matLen === 0) {
-      errors.push('교사 관찰 메모 또는 학생 자료 중 최소 하나는 입력해 주세요.');
-    }
-    if (obsLen === 0 && matLen > 0) {
+      warnings.push('교사 관찰 메모와 학생 자료가 모두 비어 있습니다. 이 경우 매우 일반적인 내용으로만 작성되니, 가능하면 짧게라도 채워 주세요.');
+    } else if (obsLen === 0 && matLen > 0) {
       warnings.push('교사 관찰 메모가 없어 학생 자료만으로 작성됩니다. 역량·태도는 단정하지 않고 보수적으로 작성됩니다.');
     }
 
@@ -183,10 +182,46 @@ const Validator = (() => {
    * 담임용 생성 버튼 활성화 여부
    */
   function checkHomeroomGenerateButton(state) {
-    if (!state.itemType) return false;
-    const obsLen = state.observationText ? state.observationText.trim().length : 0;
-    const matLen = state.materialText ? state.materialText.trim().length : 0;
-    return (obsLen + matLen) > 0;
+    return !!state.itemType;
+  }
+
+  /**
+   * 과목 AI 조교(지침 생성) 탭 검증
+   * @param {Object} inputData
+   * @param {string} inputData.schoolYear
+   * @param {string} inputData.grade
+   * @param {string} inputData.subjectName
+   * @param {string} inputData.platform
+   * @param {boolean} inputData.planUploaded    - 평가계획서 파일을 첨부했는지
+   * @param {boolean} inputData.planChecked     - 추출 결과 확인 체크 여부
+   * @returns {{ valid: boolean, errors: string[], warnings: string[] }}
+   */
+  function validateGuide(inputData) {
+    const errors = [];
+    const warnings = [];
+    const { schoolYear, grade, subjectName, platform, planUploaded, planChecked } = inputData;
+
+    if (!schoolYear) errors.push('학년도를 선택해 주세요.');
+    if (!grade) errors.push('학년을 선택해 주세요.');
+    if (!subjectName || !subjectName.trim()) errors.push('교과명을 입력해 주세요.');
+    if (!platform) errors.push('사용할 AI를 선택해 주세요.');
+    if (planUploaded && !planChecked) {
+      errors.push('평가계획서에서 추출된 내용을 확인하고 체크박스를 선택해 주세요.');
+    }
+    if (!planUploaded) {
+      warnings.push('평가계획서 파일을 첨부하지 않았습니다. 지침은 생성되지만, 평가계획서는 나중에 GPTs/Gem/Project에 직접 첨부해야 합니다.');
+    }
+
+    return { valid: errors.length === 0, errors, warnings };
+  }
+
+  /**
+   * 과목 AI 조교 탭 생성 버튼 활성화 여부
+   */
+  function checkGuideGenerateButton(state) {
+    if (!state.schoolYear || !state.grade || !state.subjectName?.trim() || !state.platform) return false;
+    if (state.planUploaded && !state.planChecked) return false;
+    return true;
   }
 
   return {
@@ -195,6 +230,8 @@ const Validator = (() => {
     validateField,
     validateHomeroom,
     checkHomeroomGenerateButton,
+    validateGuide,
+    checkGuideGenerateButton,
     MIN_TEXT_LENGTH,
   };
 
