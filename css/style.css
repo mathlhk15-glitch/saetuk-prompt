@@ -556,3 +556,56 @@ textarea { resize: vertical; line-height: 1.65; }
   background: rgba(255,255,255,.22);
   border-color: rgba(255,255,255,.6);
 }
+
+/* ── 모드 스위처 (담임용 / 교과용) ──────────────── */
+.mode-switch {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+.mode-switch-btn {
+  flex: 1;
+  padding: 16px 14px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  cursor: pointer;
+  text-align: left;
+  transition: var(--transition);
+  font-family: var(--font);
+}
+.mode-switch-btn:hover { border-color: var(--navy-light); }
+.mode-switch-btn.active {
+  border-color: var(--amber);
+  background: var(--amber-pale);
+}
+.mode-switch-btn .ms-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--navy);
+  margin-bottom: 4px;
+}
+.mode-switch-btn .ms-desc {
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+/* ── 교사 관찰 메모 강조 박스 ────────────────────── */
+.observation-field {
+  border: 1.5px solid var(--amber);
+  border-radius: var(--radius);
+  padding: 14px;
+  background: var(--amber-pale);
+}
+.observation-field .field-label { color: var(--navy); }
+.priority-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--amber);
+  border-radius: 10px;
+  padding: 2px 8px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
