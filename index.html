@@ -27,6 +27,22 @@
 <div class="page-wrap">
 
   <!-- ══════════════════════════════════════════
+       모드 스위처
+  ══════════════════════════════════════════ -->
+  <div class="mode-switch">
+    <button type="button" class="mode-switch-btn" id="mode-btn-homeroom">
+      <div class="ms-title">👨‍🏫 담임용 — 창체·행특</div>
+      <div class="ms-desc">자율활동 · 진로활동 · 동아리활동 · 행동특성 및 종합의견</div>
+    </button>
+    <button type="button" class="mode-switch-btn active" id="mode-btn-subject">
+      <div class="ms-title">📚 교과용 — 세특</div>
+      <div class="ms-desc">수행평가 원문 기반 교과 세부능력 및 특기사항</div>
+    </button>
+  </div>
+
+  <div id="panel-subject">
+
+  <!-- ══════════════════════════════════════════
        1구역 — 기본 정보 입력
   ══════════════════════════════════════════ -->
   <section class="section-card" id="sec-basic">
@@ -80,14 +96,19 @@
           <option value="과학">과학</option>
           <option value="사회">사회</option>
           <option value="영어">영어</option>
+          <option value="예술">예술(음악·미술)</option>
+          <option value="체육">체육</option>
+          <option value="기술·정보">기술·정보</option>
+          <option value="제2외국어·한문">제2외국어·한문</option>
           <option value="진로·기타">진로·기타</option>
         </select>
       </div>
 
-      <!-- 학생명 -->
+      <!-- 학생 식별명 -->
       <div class="field">
-        <label class="field-label" for="student-name">학생명 <span class="req">*</span></label>
-        <input type="text" id="student-name" placeholder="예) 정재민">
+        <label class="field-label" for="student-name">학생 식별명 <span class="req">*</span></label>
+        <input type="text" id="student-name" placeholder="예) 1번, 3반 15번, A학생 (실명 대신 사용을 권장합니다)">
+        <div class="field-hint">외부 AI 서비스로 전송되므로 실명보다 번호·약칭 사용을 권장합니다.</div>
         <div class="extract-suggest" id="name-suggest"></div>
         <div class="field-error" id="err-student-name"></div>
       </div>
@@ -104,27 +125,42 @@
         <label class="field-label">프롬프트 강도 <span class="req">*</span></label>
         <div class="radio-group">
           <div class="radio-option">
-            <input type="radio" name="prompt-mode" id="mode-normal" value="일반">
+            <input type="radio" name="prompt-mode" id="mode-normal" value="사실중심">
             <label for="mode-normal">
               <span class="radio-emoji">📝</span>
-              일반형
+              사실중심형
             </label>
           </div>
           <div class="radio-option">
-            <input type="radio" name="prompt-mode" id="mode-hakjong" value="학종강화">
+            <input type="radio" name="prompt-mode" id="mode-hakjong" value="균형" checked>
             <label for="mode-hakjong">
               <span class="radio-emoji">🎯</span>
-              학종강화형
+              균형형
             </label>
           </div>
           <div class="radio-option">
-            <input type="radio" name="prompt-mode" id="mode-top" value="최상위권" checked>
+            <input type="radio" name="prompt-mode" id="mode-top" value="심화">
             <label for="mode-top">
               <span class="radio-emoji">⭐</span>
-              최상위권형
+              심화형
             </label>
           </div>
         </div>
+      </div>
+
+      <!-- 교사 관찰 메모 (전체 너비, 강조) -->
+      <div class="field full observation-field">
+        <label class="field-label" for="observation-text">교사 관찰 메모 <span class="priority-badge">1순위 근거</span></label>
+        <textarea id="observation-text" rows="3"
+          placeholder="이 학생을 직접 보시면서 기억나는 장면이나 태도를 적어 주세요. (예: 모둠 토의에서 자료 출처를 다시 확인하자고 제안함) 비워두면 원문만으로 보수적으로 작성됩니다."></textarea>
+      </div>
+
+      <!-- 다중 버전 출력 옵션 (전체 너비) -->
+      <div class="field full">
+        <label style="display:flex;align-items:center;gap:8px;font-weight:500;cursor:pointer;">
+          <input type="checkbox" id="multi-version" style="width:auto;">
+          500 / 700 / 1000바이트 3개 버전 모두 생성 (선택 — 기본은 700바이트 1개만 생성)
+        </label>
       </div>
 
     </div><!-- /form-grid -->
@@ -177,25 +213,113 @@
   </section>
 
 
-  <!-- ══════════════════════════════════════════
-       3구역 — 자동 판단 결과 패널
-  ══════════════════════════════════════════ -->
-  <div class="status-panel" id="status-panel"></div>
-
-
-  <!-- ══════════════════════════════════════════
-       경고 / 오류 박스
-  ══════════════════════════════════════════ -->
-  <div class="alert-box error"   id="alert-error"></div>
-  <div class="alert-box warning" id="alert-warning"></div>
-
-
-  <!-- ══════════════════════════════════════════
-       생성 버튼
-  ══════════════════════════════════════════ -->
+  <!-- 생성 버튼 (교과용) -->
   <button class="btn btn-primary" id="btn-generate" disabled>
     ✨ 세특 프롬프트 생성
   </button>
+
+  </div><!-- /panel-subject -->
+
+  <!-- ══════════════════════════════════════════
+       담임용 패널 — 창체·행특
+  ══════════════════════════════════════════ -->
+  <div id="panel-homeroom" style="display:none;">
+
+    <section class="section-card">
+      <div class="section-label">1구역 — 작성 항목 및 학생 정보</div>
+      <div class="form-grid">
+
+        <div class="field full">
+          <label class="field-label">작성 항목 <span class="req">*</span></label>
+          <div class="radio-group">
+            <div class="radio-option">
+              <input type="radio" name="hr-item" id="hr-item-behavior" value="행동특성및종합의견">
+              <label for="hr-item-behavior"><span class="radio-emoji">🧭</span>행동특성및종합의견</label>
+            </div>
+            <div class="radio-option">
+              <input type="radio" name="hr-item" id="hr-item-autonomy" value="자율활동">
+              <label for="hr-item-autonomy"><span class="radio-emoji">🏫</span>자율활동</label>
+            </div>
+            <div class="radio-option">
+              <input type="radio" name="hr-item" id="hr-item-career" value="진로활동">
+              <label for="hr-item-career"><span class="radio-emoji">🧭</span>진로활동</label>
+            </div>
+            <div class="radio-option">
+              <input type="radio" name="hr-item" id="hr-item-club" value="동아리활동">
+              <label for="hr-item-club"><span class="radio-emoji">🎨</span>동아리활동</label>
+            </div>
+          </div>
+          <div class="field-error" id="err-hr-item"></div>
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="hr-student-name">학생 식별명 <span class="req">*</span></label>
+          <input type="text" id="hr-student-name" placeholder="예) 1번, 3반 15번 (실명 대신 사용을 권장합니다)">
+          <div class="field-error" id="err-hr-student-name"></div>
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="hr-student-id">학번 <span style="font-weight:400;color:var(--text-muted)">(선택)</span></label>
+          <input type="text" id="hr-student-id" placeholder="예) 30419">
+        </div>
+
+        <div class="field full">
+          <label class="field-label">목표 분량 <span class="req">*</span></label>
+          <div class="radio-group">
+            <div class="radio-option">
+              <input type="radio" name="hr-length" id="hr-len-500" value="500">
+              <label for="hr-len-500">500바이트</label>
+            </div>
+            <div class="radio-option">
+              <input type="radio" name="hr-length" id="hr-len-700" value="700" checked>
+              <label for="hr-len-700">700바이트</label>
+            </div>
+            <div class="radio-option">
+              <input type="radio" name="hr-length" id="hr-len-1500" value="1500">
+              <label for="hr-len-1500">1500바이트</label>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <section class="section-card">
+      <div class="section-label">2구역 — 근거 자료</div>
+      <div class="form-grid">
+
+        <div class="field full observation-field">
+          <label class="field-label" for="hr-observation">교사 관찰 메모 <span class="priority-badge">1순위 근거</span></label>
+          <textarea id="hr-observation" rows="4"
+            placeholder="이 학생을 직접 보시면서 기억나는 장면이나 태도를 적어 주세요. (예: 학급 행사 준비 중 의견이 갈릴 때 절충안을 제시함)"></textarea>
+        </div>
+
+        <div class="field full">
+          <label class="field-label" for="hr-material">학생 자료 (선택 — 자기평가서·상담자료·활동기록 등)</label>
+          <textarea id="hr-material" rows="4"
+            placeholder="학생이 작성한 자기평가서, 소감문, 활동 기록 등을 붙여넣으세요. 보조 근거로만 사용되며 그대로 옮겨지지 않습니다."></textarea>
+        </div>
+
+      </div>
+    </section>
+
+    <div class="alert-box error" id="hr-alert-error"></div>
+    <div class="alert-box warning" id="hr-alert-warning"></div>
+
+    <button class="btn btn-primary" id="btn-generate-homeroom" disabled>
+      ✨ 창체·행특 프롬프트 생성
+    </button>
+
+  </div><!-- /panel-homeroom -->
+
+  <!-- ══════════════════════════════════════════
+       3구역 — 자동 판단 결과 패널 (교과용 전용)
+  ══════════════════════════════════════════ -->
+  <div class="status-panel" id="status-panel"></div>
+
+  <!-- 경고 / 오류 박스 (교과용) -->
+  <div class="alert-box error"   id="alert-error"></div>
+  <div class="alert-box warning" id="alert-warning"></div>
 
 
   <!-- ══════════════════════════════════════════
@@ -228,10 +352,12 @@
 <script src="js/utils.js"></script>
 <script src="js/curriculum.js"></script>
 <script src="js/presets.js"></script>
+<script src="js/presets-homeroom.js"></script>
 <script src="js/extractor.js"></script>
 <script src="js/validator.js"></script>
 <script src="js/parser.js"></script>
 <script src="js/prompt.js"></script>
+<script src="js/prompt-homeroom.js"></script>
 <script src="js/app.js"></script>
 
 </body>
