@@ -50,6 +50,23 @@
   const elToast           = $('toast');
   const elNameSuggest     = $('name-suggest');
   const elIdSuggest       = $('id-suggest');
+  const elObservationText = $('observation-text');
+  const elMultiVersion    = $('multi-version');
+
+  // ── 모드 스위처 요소 ───────────────────────────
+  const elModeBtnSubject  = $('mode-btn-subject');
+  const elModeBtnHomeroom = $('mode-btn-homeroom');
+  const elPanelSubject    = $('panel-subject');
+  const elPanelHomeroom   = $('panel-homeroom');
+
+  // ── 담임용 UI 요소 참조 ────────────────────────
+  const elHrStudentName   = $('hr-student-name');
+  const elHrStudentId     = $('hr-student-id');
+  const elHrObservation   = $('hr-observation');
+  const elHrMaterial      = $('hr-material');
+  const elBtnGenerateHr   = $('btn-generate-homeroom');
+  const elHrAlertError    = $('hr-alert-error');
+  const elHrAlertWarning  = $('hr-alert-warning');
 
   // ── 내부 상태 ──────────────────────────────────
   let state = {
@@ -59,10 +76,22 @@
     subjectGroup: '',
     studentName:  '',
     studentId:    '',
-    promptMode:   '최상위권',
+    promptMode:   '균형',
     rawText:      '',
+    observationText: '',
+    multiVersion: false,
     docxUploaded: false,
     docxChecked:  false,
+  };
+
+  // ── 담임용 내부 상태 ───────────────────────────
+  let hrState = {
+    itemType: '',
+    studentName: '',
+    studentId: '',
+    observationText: '',
+    materialText: '',
+    targetLength: '700',
   };
 
   // ── 초기화 ─────────────────────────────────────
@@ -186,6 +215,45 @@
       updateGenerateButton();
       updateStatusPanel();
     });
+
+    // 교사 관찰 메모
+    elObservationText.addEventListener('input', () => {
+      state.observationText = elObservationText.value;
+    });
+
+    // 다중 버전 출력 옵션
+    elMultiVersion.addEventListener('change', () => {
+      state.multiVersion = elMultiVersion.checked;
+    });
+
+    // 모드 스위처
+    elModeBtnSubject.addEventListener('click', () => switchMode('subject'));
+    elModeBtnHomeroom.addEventListener('click', () => switchMode('homeroom'));
+
+    // ── 담임용 이벤트 ─────────────────────────────
+    document.querySelectorAll('input[name="hr-item"]').forEach(radio => {
+      radio.addEventListener('change', () => {
+        hrState.itemType = radio.value;
+        updateHrGenerateButton();
+      });
+    });
+    document.querySelectorAll('input[name="hr-length"]').forEach(radio => {
+      radio.addEventListener('change', () => { hrState.targetLength = radio.value; });
+    });
+    elHrStudentName.addEventListener('input', () => {
+      hrState.studentName = elHrStudentName.value;
+      updateHrGenerateButton();
+    });
+    elHrStudentId.addEventListener('input', () => { hrState.studentId = elHrStudentId.value; });
+    elHrObservation.addEventListener('input', () => {
+      hrState.observationText = elHrObservation.value;
+      updateHrGenerateButton();
+    });
+    elHrMaterial.addEventListener('input', () => {
+      hrState.materialText = elHrMaterial.value;
+      updateHrGenerateButton();
+    });
+    elBtnGenerateHr.addEventListener('click', handleGenerateHomeroom);
 
     // 생성 버튼
     elBtnGenerate.addEventListener('click', handleGenerate);
@@ -352,10 +420,15 @@
 
     // 항상 포함되는 지시 항목
     lines.push(`<span class="ok">✅ 원문 분석표 지시 포함</span>`);
-    lines.push(`<span class="ok">✅ 500 / 700 / 1000바이트 버전 지시 포함</span>`);
+    lines.push(`<span class="ok">✅ 출력 분량: ${s.multiVersion ? '500/700/1000바이트 3버전' : '700바이트 1개'}</span>`);
     lines.push(`<span class="ok">✅ 루브릭 자기 점검 지시 포함</span>`);
     lines.push(`<span class="ok">✅ 금지어 + 대체 표현 포함</span>`);
     lines.push(`<span class="ok">✅ 최종 추천본 요청 포함</span>`);
+    if (s.observationText && s.observationText.trim()) {
+      lines.push(`<span class="ok">✅ 교사 관찰 메모 반영 (1순위 근거)</span>`);
+    } else {
+      lines.push(`<span class="warn">⚠️ 교사 관찰 메모 없음 — 보수적 모드로 작성됩니다</span>`);
+    }
 
     // 강도
     if (s.promptMode) {
@@ -407,6 +480,8 @@
       studentId:    state.studentId,
       promptMode:   state.promptMode,
       rawText:      state.rawText,
+      observationText: state.observationText,
+      multiVersion: state.multiVersion,
       docxUploaded: state.docxUploaded,
       docxChecked:  state.docxChecked,
     };
@@ -441,6 +516,86 @@
         elBtnGenerate.disabled = false;
         elBtnGenerate.innerHTML = '✨ 세특 프롬프트 생성';
         updateGenerateButton();
+      }
+    }, 30);
+  }
+
+  // ── 모드 스위처 ────────────────────────────────
+  function switchMode(mode) {
+    if (mode === 'homeroom') {
+      elPanelSubject.style.display = 'none';
+      elPanelHomeroom.style.display = '';
+      elModeBtnSubject.classList.remove('active');
+      elModeBtnHomeroom.classList.add('active');
+    } else {
+      elPanelHomeroom.style.display = 'none';
+      elPanelSubject.style.display = '';
+      elModeBtnHomeroom.classList.remove('active');
+      elModeBtnSubject.classList.add('active');
+    }
+    elOutputSection.classList.remove('show');
+    clearAlerts();
+    clearHrAlerts();
+  }
+
+  // ── 담임용 생성 버튼 활성화 제어 ───────────────
+  function updateHrGenerateButton() {
+    elBtnGenerateHr.disabled = !Validator.checkHomeroomGenerateButton(hrState);
+  }
+
+  // ── 담임용 알림 헬퍼 ───────────────────────────
+  function showHrAlert(type, msg) {
+    const el = type === 'error' ? elHrAlertError : elHrAlertWarning;
+    el.textContent = msg;
+    el.classList.add('show');
+  }
+  function clearHrAlerts() {
+    elHrAlertError.classList.remove('show');
+    elHrAlertWarning.classList.remove('show');
+  }
+
+  // ── 담임용 생성 버튼 클릭 ──────────────────────
+  function handleGenerateHomeroom() {
+    clearHrAlerts();
+
+    const inputData = {
+      itemType:        hrState.itemType,
+      studentName:     hrState.studentName,
+      studentId:       hrState.studentId,
+      observationText: hrState.observationText,
+      materialText:    hrState.materialText,
+      targetLength:    hrState.targetLength,
+    };
+
+    const { valid, errors, warnings } = Validator.validateHomeroom(inputData);
+
+    if (!valid) {
+      showHrAlert('error', '⚠️ 입력을 확인해 주세요:\n• ' + errors.join('\n• '));
+      return;
+    }
+    if (warnings.length > 0) {
+      showHrAlert('warning', warnings.join('\n'));
+    }
+
+    elBtnGenerateHr.disabled = true;
+    elBtnGenerateHr.innerHTML = '<span class="spinner"></span> 생성 중...';
+
+    setTimeout(() => {
+      try {
+        const prompt = PromptHomeroom.generateHomeroomPrompt(inputData);
+        elOutputText.value = prompt;
+        elOutputSection.classList.add('show');
+        elOutputSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // 다운로드 파일명에 사용할 수 있도록 공용 state에도 반영
+        state.studentName = hrState.studentName;
+        state.subjectName = PresetsHomeroom.ITEM_LABELS[hrState.itemType] || '창체행특';
+      } catch (e) {
+        console.error('[app] 담임용 프롬프트 생성 오류:', e);
+        showHrAlert('error', '프롬프트 생성 중 오류가 발생했습니다. 페이지를 새로고침 후 다시 시도해 주세요.');
+      } finally {
+        elBtnGenerateHr.disabled = false;
+        elBtnGenerateHr.innerHTML = '✨ 창체·행특 프롬프트 생성';
+        updateHrGenerateButton();
       }
     }, 30);
   }
@@ -493,10 +648,12 @@
     elStudentName.value = '';
     elStudentId.value   = '';
     elRawText.value     = '';
+    elObservationText.value = '';
+    elMultiVersion.checked  = false;
     elOutputText.value  = '';
 
     // 라디오 기본값 복원
-    document.querySelector('#mode-top').checked = true;
+    document.querySelector('#mode-hakjong').checked = true;
 
     // 상태 초기화
     state = {
@@ -506,11 +663,31 @@
       subjectGroup: '',
       studentName:  '',
       studentId:    '',
-      promptMode:   '최상위권',
+      promptMode:   '균형',
       rawText:      '',
+      observationText: '',
+      multiVersion: false,
       docxUploaded: false,
       docxChecked:  false,
     };
+
+    // 담임용 폼 및 상태 초기화
+    elHrStudentName.value = '';
+    elHrStudentId.value   = '';
+    elHrObservation.value = '';
+    elHrMaterial.value    = '';
+    document.querySelectorAll('input[name="hr-item"]').forEach(r => { r.checked = false; });
+    document.querySelector('#hr-len-700').checked = true;
+    hrState = {
+      itemType: '',
+      studentName: '',
+      studentId: '',
+      observationText: '',
+      materialText: '',
+      targetLength: '700',
+    };
+    clearHrAlerts();
+    updateHrGenerateButton();
 
     // UI 초기화
     elDocxConfirmBox.classList.remove('show');

@@ -53,29 +53,35 @@ const Prompt = (() => {
       studentId,
       promptMode,
       rawText,
+      observationText,
+      multiVersion,
     } = inputData;
 
     // ── 보조 정보 계산 ──────────────────────────
     const gradeLabel = `고${grade}`;
     const idLabel    = studentId && studentId.trim() ? studentId.trim() : '미확인';
     const dateLabel  = Utils.formatDate();
+    const hasObservation = !!(observationText && observationText.trim());
 
     const { chars, bytes, label: modeLabel } = Utils.getTextSummary(rawText);
     const { curriculum, reason } = Curriculum.decide(schoolYear, grade);
     const curriculumInstruction   = Curriculum.getInstruction(curriculum);
 
     const subjectPreset   = Presets.SUBJECT_PRESETS[subjectGroup] || Presets.SUBJECT_PRESETS['진로·기타'];
-    const modeInstruction = Presets.MODE_INSTRUCTIONS[promptMode] || Presets.MODE_INSTRUCTIONS['최상위권'];
+    const modeInstruction = Presets.MODE_INSTRUCTIONS[promptMode] || Presets.MODE_INSTRUCTIONS['균형'];
 
     // ── [처리 요약] ──────────────────────────────
     const summaryBlock = _buildSummary({
       studentName, subjectName, gradeLabel,
       schoolYear, curriculum, reason,
-      promptMode, chars, bytes, modeLabel, dateLabel,
+      promptMode, chars, bytes, modeLabel, dateLabel, hasObservation,
     });
 
     // ── [역할 및 작성 원칙] ──────────────────────
-    const roleBlock = _buildRole();
+    const roleBlock = _buildRole(hasObservation);
+
+    // ── [교사 관찰 메모 — 최우선 근거] ───────────
+    const observationBlock = hasObservation ? _buildObservationBlock(observationText) : _buildNoObservationNotice();
 
     // ── [입력 정보] ──────────────────────────────
     const inputInfoBlock = _buildInputInfo({
@@ -93,7 +99,7 @@ const Prompt = (() => {
     const step2Block = _buildStep2();
 
     // ── [3단계] 분량별 출력 조건 ─────────────────
-    const step3Block = Presets.OUTPUT_FORMAT;
+    const step3Block = multiVersion ? Presets.OUTPUT_FORMAT : Presets.OUTPUT_FORMAT_SINGLE;
 
     // ── [4단계] 루브릭 ───────────────────────────
     const step4Block = Presets.RUBRIC;
@@ -141,6 +147,7 @@ const Prompt = (() => {
     const parts = [
       summaryBlock,
       roleBlock,
+      observationBlock,
       inputInfoBlock,
       curriculumBlock,
       step1Block,
@@ -172,27 +179,50 @@ const Prompt = (() => {
   /** [처리 요약] 블록 */
   function _buildSummary({ studentName, subjectName, gradeLabel,
                             schoolYear, curriculum, reason,
-                            promptMode, chars, bytes, modeLabel, dateLabel }) {
+                            promptMode, chars, bytes, modeLabel, dateLabel, hasObservation }) {
     return `[처리 요약]
-학생: ${studentName} | 교과: ${subjectName} | 학년: ${gradeLabel}
+학생 식별명: ${studentName} | 교과: ${subjectName} | 학년: ${gradeLabel}
 교육과정: ${curriculum} (${reason}) | 강도: ${promptMode}
+교사 관찰 메모: ${hasObservation ? '있음 (1순위 근거)' : '없음 (원문만으로 보수적 작성)'}
 원문: ${chars.toLocaleString()}자 / 약 ${bytes.toLocaleString()}바이트 | 처리 모드: ${modeLabel}
 생성일시: ${dateLabel}`;
   }
 
   /** [역할 및 작성 원칙] 블록 */
-  function _buildRole() {
+  function _buildRole(hasObservation) {
     return `══════════════════════════════════════════
 ■ 역할 및 작성 원칙
 ══════════════════════════════════════════
 당신은 대한민국 고등학교 담당 교사입니다.
-아래 [수행평가 원문]을 바탕으로 학교생활기록부 교과 세부능력 및 특기사항(세특)을 작성합니다.
+아래 자료를 바탕으로 학교생활기록부 교과 세부능력 및 특기사항(세특)을 작성합니다.
 
 다음 원칙을 반드시 지키십시오:
-1. 원문에 근거한 사실만 서술. 추정·과장·창작 금지.
-2. 교사가 학생을 관찰하고 기록하는 문체로 작성.
-3. 아래 제시된 모든 지시 사항을 단계별로 완전히 수행한 뒤 세특을 출력할 것.
-4. 각 단계(1~5)를 순서대로 수행하고, 각 단계의 출력을 명확히 표시할 것.`;
+1. 자료에 근거한 사실만 서술. 추정·과장·창작 금지.
+2. 교사가 학생을 관찰하고 기록하는 문체로 작성. 학생이 제출한 글을 그대로 옮기지 말고 반드시 교사의 시점으로 재구성할 것.
+3. ${hasObservation ? '아래 [교사 관찰 메모]를 1순위 근거로 삼고, [수행평가 원문]은 보조 근거로만 활용할 것.' : '[교사 관찰 메모]가 제공되지 않았으므로, 학생의 역량·태도·성장을 단정하지 말고 원문에서 확인되는 사실 중심으로 보수적으로 작성할 것.'}
+4. 아래 제시된 모든 지시 사항을 단계별로 완전히 수행한 뒤 세특을 출력할 것.
+5. 각 단계를 순서대로 수행하고, 각 단계의 출력을 명확히 표시할 것.`;
+  }
+
+  /** [교사 관찰 메모] 블록 — 있는 경우 */
+  function _buildObservationBlock(observationText) {
+    return `══════════════════════════════════════════
+■ 교사 관찰 메모 (1순위 근거)
+══════════════════════════════════════════
+아래는 담당 교사가 이 학생을 직접 관찰하고 남긴 메모입니다. 이 내용을 세특 작성의 가장 중요한 근거로 삼으십시오.
+수행평가 원문은 이 관찰 내용을 뒷받침하는 보조 자료로만 사용하십시오.
+
+${observationText.trim()}`;
+  }
+
+  /** [교사 관찰 메모] 블록 — 없는 경우 (보수적 모드 안내) */
+  function _buildNoObservationNotice() {
+    return `══════════════════════════════════════════
+■ 교사 관찰 메모 (없음)
+══════════════════════════════════════════
+이번 요청에는 교사 관찰 메모가 포함되지 않았습니다.
+아래 [수행평가 원문]만을 근거로, 학생의 역량이나 태도를 단정하지 말고 원문에서 확인되는 활동 사실 중심으로 보수적으로 작성하십시오.
+가능하다면 다음번에는 짧게라도 교사 관찰 메모를 함께 제공하는 것을 권장한다는 점을 [교사용 수정 안내]에 한 줄로 남기십시오.`;
   }
 
   /** [입력 정보] 블록 */
@@ -201,7 +231,7 @@ const Prompt = (() => {
     return `══════════════════════════════════════════
 ■ 입력 정보
 ══════════════════════════════════════════
-학생명: ${studentName}
+학생 식별명: ${studentName}
 학번: ${idLabel}
 교과명: ${subjectName}
 교과군: ${subjectGroup}

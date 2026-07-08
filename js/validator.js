@@ -55,7 +55,7 @@ const Validator = (() => {
       errors.push('교과군을 선택해 주세요.');
     }
     if (!studentName || !studentName.trim()) {
-      errors.push('학생명을 입력해 주세요.');
+      errors.push('학생 식별명을 입력해 주세요.');
     }
     if (!rawText || !rawText.trim()) {
       errors.push('수행평가 원문을 입력해 주세요.');
@@ -83,6 +83,9 @@ const Validator = (() => {
     // ── 경고 (warnings) — 생성 차단은 아님 ────────
     if (!inputData.studentId) {
       warnings.push('학번이 입력되지 않았습니다. 프롬프트에 "미확인"으로 표시됩니다.');
+    }
+    if (!inputData.observationText || !inputData.observationText.trim()) {
+      warnings.push('교사 관찰 메모가 비어 있습니다. 없어도 생성은 되지만, 있으면 원문보다 우선 근거로 반영되어 세특의 신뢰도가 높아집니다.');
     }
 
     // 깨진 문자 감지 (extractor.js의 hasGarbledText 사용)
@@ -146,17 +149,59 @@ const Validator = (() => {
         if (!value || !value.trim()) return '교과명을 입력해 주세요.';
         return '';
       case 'studentName':
-        if (!value || !value.trim()) return '학생명을 입력해 주세요.';
+        if (!value || !value.trim()) return '학생 식별명을 입력해 주세요.';
         return '';
       default:
         return '';
     }
   }
 
+  /**
+   * 담임용(창체·행특) 입력값 검증
+   * @param {Object} inputData
+   * @param {string} inputData.itemType        - '행특'|'자율활동'|'진로활동'|'동아리활동'
+   * @param {string} inputData.studentName      - 학생 식별명
+   * @param {string} inputData.observationText  - 교사 관찰 메모
+   * @param {string} inputData.materialText     - 학생 자료 (선택)
+   * @returns {{ valid: boolean, errors: string[], warnings: string[] }}
+   */
+  function validateHomeroom(inputData) {
+    const errors = [];
+    const warnings = [];
+    const { itemType, studentName, observationText, materialText } = inputData;
+
+    if (!itemType) errors.push('작성 항목을 선택해 주세요.');
+    if (!studentName || !studentName.trim()) errors.push('학생 식별명을 입력해 주세요.');
+
+    const obsLen = observationText ? observationText.trim().length : 0;
+    const matLen = materialText ? materialText.trim().length : 0;
+    if (obsLen === 0 && matLen === 0) {
+      errors.push('교사 관찰 메모 또는 학생 자료 중 최소 하나는 입력해 주세요.');
+    }
+    if (obsLen === 0 && matLen > 0) {
+      warnings.push('교사 관찰 메모가 없어 학생 자료만으로 작성됩니다. 역량·태도는 단정하지 않고 보수적으로 작성됩니다.');
+    }
+
+    return { valid: errors.length === 0, errors, warnings };
+  }
+
+  /**
+   * 담임용 생성 버튼 활성화 여부
+   */
+  function checkHomeroomGenerateButton(state) {
+    if (!state.itemType) return false;
+    if (!state.studentName || !state.studentName.trim()) return false;
+    const obsLen = state.observationText ? state.observationText.trim().length : 0;
+    const matLen = state.materialText ? state.materialText.trim().length : 0;
+    return (obsLen + matLen) > 0;
+  }
+
   return {
     validate,
     checkGenerateButton,
     validateField,
+    validateHomeroom,
+    checkHomeroomGenerateButton,
     MIN_TEXT_LENGTH,
   };
 
